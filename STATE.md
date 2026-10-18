@@ -16,6 +16,7 @@ Plan: Pehle app me trade karke signal check karo → sahi chala to **Step 2: MT5
 | icon-192.png / icon-512.png | Gold "MS" icon |
 | STATE.md | Ye file |
 | mt5/MEXA SCALP Signal v1.00.mq5 | MT5 indicator — same signal + phone push (manual install, MQL5\Indicators) |
+| mt5/MEXA SCALP Trade EA v1.00.mq5 | **AUTO TRADE EA** — signal par khud trade (demo pe pehle) |
 | mt5/MEXA SCALP Signal EA v1.00.mq5 | Same signal, EA form (koi trade nahi) — VPS Helper se deploy (Samusignal repo `vps-ea/`) |
 
 ## Version history
@@ -25,6 +26,13 @@ Plan: Pehle app me trade karke signal check karo → sahi chala to **Step 2: MT5
   - ✅ **Maine trade liya** button: MT5 ki asli trade ka record (side, lot, MT5 entry) → Trades tab "MT5 Real Trades" me WIN/LOSS + $ → real win % / net
   - Gold **TP $5 / SL $2.5** (purane users par ek baar apne aap)
   - Strategy same (signal engine Binance data par)
+- **MT5 Trade EA v1.00** (2026-10-18) — `mt5/MEXA SCALP Trade EA v1.00.mq5` (user ke rules)
+  - Signal: EMA 9/21 + RSI 14 (BUY 50–70, SELL 30–50) — user ne 9/21 hi chuna
+  - Entry Mode input: **CLOSE** (default, candle close par pakka signal) / LIVE — Strategy Tester me dono compare karna
+  - Lot = balance ka **1% risk** (SL $2 se auto), **TP $3 / SL $2** order ke saath
+  - **Exit rule**: har candle close se **5 sec pehle** — net profit > $0.10 ho to BOOK; loss me ho to TP/SL tak wait (agli candle phir check)
+  - Max spread **$0.30**, rollover 23:55–00:10 (server) skip, 1 trade at a time (magic 18102026), **daily stop 3%** (sirf MEXA ka P/L)
+  - Push: open / BOOK / TP / SL / daily stop
 - **v1.07** (2026-10-18) — Signal jaldi (user: "signal 2-3 min baad aata hai, move nikal jata hai")
   - ⚡ **LIVE signal** (default ON): chalu candle par EMA cross hote hi usi pal alert (har candle max 1), chart par chamakta ⚡ tir, banner "⚡ LIVE"
   - Candle close par cross wapas → **"सिग्नल कैंसल"** voice + grey banner + tir hatta hai + vibrate; close par pakka ho to chup
@@ -78,6 +86,9 @@ Plan: Pehle app me trade karke signal check karo → sahi chala to **Step 2: MT5
 
 ## Decisions
 - TradingView widget iframe hai — uska data padh nahi sakte, isliye signal Binance (PAXG/BTC) se hi; gold me TV (XAUUSD) aur signal thoda alag ho sakta hai.
+- Trade EA: entry CLOSE recommend kiya (exit rule ko pura ~55 sec milta hai, repaint/cancel nahi, backtest sahi). LIVE input me rakha.
+- Honest risk: chhota profit book + poora $10 loss → approx 70%+ win chahiye; pehle demo + Strategy Tester (Every tick based on real ticks).
+- Daily loss sirf MEXA magic ke deals se ginta hai (PERSONAL FX ka P/L nahi). EA restart par us waqt ka balance day-start maana jaata hai.
 - LIVE signal repaint ho sakta hai (candle ke beech cross aakar wapas ja sakta hai) — isliye close par confirm/cancel. Tez signal = zyada galat signal, ye trade-off user ne chuna.
 - MT5 Signal EA abhi bhi candle-close (NORMAL 9/21) par hai — LIVE/FAST waha baad me.
 - Voice phone ke Text-to-speech (Google TTS) se — offline file nahi. MT5 push ki tune MT5 app khud tay karta hai, EA se badal nahi sakte.
@@ -90,6 +101,8 @@ Plan: Pehle app me trade karke signal check karo → sahi chala to **Step 2: MT5
 - Pocket Option / Olymp Trade se koi connection nahi (RBI Alert List platforms) — sirf practice + aage MT5.
 
 ## Pending / Next
+- [ ] Trade EA: Strategy Tester XAUUSDm M1, 1–2 mahine, CLOSE vs LIVE compare → demo par 1 hafta
+- [ ] Confirm PERSONAL FX dusre magic ki trades ko nahi chhoota
 - [ ] VPS par **MEXA SCALP Signal EA** naye XAUUSD M1 chart par lagao (auto-compile ho chuka hoga) + push test karo
 - [ ] Kuch din app me trade karke Report check karo (30–50+ signals)
 - [ ] Best settings mile to **MT5 EA (MEXA SCALP EA)** — same EMA/RSI logic, TP/SL, XAUUSD M1/M5
