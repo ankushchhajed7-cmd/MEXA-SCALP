@@ -1,6 +1,6 @@
 # MEXA SCALP — STATE
 
-**Current version:** v1.05 (2026-10-18)
+**Current version:** v1.06 (2026-10-18)
 **Live URL (main merge ke baad):** https://ankushchhajed7-cmd.github.io/MEXA-SCALP/
 
 ## Kya hai
@@ -19,6 +19,7 @@ Plan: Pehle app me trade karke signal check karo → sahi chala to **Step 2: MT5
 | mt5/MEXA SCALP Signal EA v1.00.mq5 | Same signal, EA form (koi trade nahi) — VPS Helper se deploy (Samusignal repo `vps-ea/`) |
 
 ## Version history
+- **v1.06** (2026-10-18) — Voice fix: Devanagari "हेलो" ko phone ki voice "hevu" bol rahi thi → ab "Hello" English me likha (baaki line Hindi me). APK me voice chal gayi (v1.05 + naya APK #32 confirm).
 - **v1.05** (2026-10-18) — **APK support**: apk-factory ke naye `ANVAlert` bridge se Voice (Android TTS), Notification, Vibrate; `ANVScreen.keepOn` se Screen ON. Chrome/Home-screen me pehle jaisa Web API. APK naye apk-factory workflow (branch `feature-alert-bridge`) se dobara banana hoga.
 - **v1.04** (2026-10-18) — 🗣 **Voice alert**: signal par phone ki Hindi voice bolti hai "हेलो अंकुश, गोल्ड में बाय/सेल सिग्नल आया है"; trade WIN/LOSS bhi bolta hai. Settings: Voice ON/OFF, naam badlo, Voice Test. (Voice ON ho to beep 1 baar, phir awaaz)
 - **MT5 Signal EA v1.00** (2026-10-18) — `mt5/MEXA SCALP Signal EA v1.00.mq5`: indicator wala hi signal + push, par EA form me kyunki VPS Helper sirf MQL5\Experts me daalta hai. Koi trade nahi, Algo Trading OFF ho tab bhi chalta hai. VPS par bheja: Samusignal repo `vps-ea/` (main).

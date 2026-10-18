@@ -2,8 +2,10 @@
 <html lang="hi">
 <head>
 <!--
-  MEXA SCALP  v1.05  (2026-10-18)
+  MEXA SCALP  v1.06  (2026-10-18)
   ------------------------------------------------------------
+  v1.06
+   - Voice fix: "हेलो" galat bola ja raha tha ("hevu") — ab English "Hello" likha, phone sahi "Hello" bolta hai
   v1.05
    - APK (apk-factory) support: native ANVAlert bridge se Voice, Notification, Vibrate
      aur ANVScreen se Screen ON — WebView APK me bhi sab chalega (naya APK banana zaroori)
@@ -167,7 +169,7 @@ nav button.on{background:rgba(0,0,0,.78);color:var(--glow)}
 
 <header>
   <div class="logo metal">MS</div>
-  <div class="brand"><b>MEXA SCALP</b><small>PRACTICE · <span id="ver">v1.05</span></small></div>
+  <div class="brand"><b>MEXA SCALP</b><small>PRACTICE · <span id="ver">v1.06</span></small></div>
   <div class="bal"><small>DEMO BALANCE</small><span id="bal">$1,000.00</span></div>
   <button class="rbtn metal" id="refBtn" title="Refresh">↻</button>
 </header>
@@ -292,7 +294,7 @@ nav button.on{background:rgba(0,0,0,.78);color:var(--glow)}
 <script>
 'use strict';
 /* ================= CONFIG ================= */
-const VER = 'v1.05';
+const VER = 'v1.06';
 const LS_KEY = 'mexa_scalp_v1';
 const REST = ['https://data-api.binance.vision','https://api.binance.com','https://api1.binance.com','https://api3.binance.com'];
 const WSS  = ['wss://data-stream.binance.vision/ws/','wss://stream.binance.com:9443/ws/'];
@@ -563,7 +565,7 @@ function speak(text){
 }
 function sigVoiceText(buy){
   const n=(st.set.vname||'').trim();
-  return (n?'हेलो '+n+', ':'')+(ASSET_HI[st.set.sym]||'')+' में '+(buy?'बाय':'सेल')+' सिग्नल आया है';
+  return (n?'Hello '+n+', ':'')+(ASSET_HI[st.set.sym]||'')+' में '+(buy?'बाय':'सेल')+' सिग्नल आया है';
 }
 function alertNow(buy,title,body,withNotif){
   const s=st.set;
