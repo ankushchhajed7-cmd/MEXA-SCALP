@@ -1,5 +1,5 @@
-// MEXA SCALP service worker v1.01 — network-first, offline shell
-const CACHE = 'mexa-scalp-v1.01';
+// MEXA SCALP service worker v1.02 — network-first, offline shell
+const CACHE = 'mexa-scalp-v1.02';
 const SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {

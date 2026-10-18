@@ -1,6 +1,6 @@
 # MEXA SCALP — STATE
 
-**Current version:** v1.01 (2026-10-18)
+**Current version:** v1.02 (2026-10-18)
 **Live URL (main merge ke baad):** https://ankushchhajed7-cmd.github.io/MEXA-SCALP/
 
 ## Kya hai
@@ -17,6 +17,7 @@ Plan: Pehle app me trade karke signal check karo → sahi chala to **Step 2: MT5
 | STATE.md | Ye file |
 
 ## Version history
+- **v1.02** (2026-10-18) — Header me Demo Balance ke bagal **↻ Refresh** button: tap par menu → 🔄 App + Chart Refresh (naya version + data reload) / 💰 Demo Balance Reset
 - **v1.01** (2026-10-18) — Alert fixes (user feedback)
   - Sound bahut kam tha → square wave + compressor, Volume Low/Med/High/MAX (default High), signal tone 3 baar
   - Vibrate button: pehle tap par OFF ho jata tha (confusing) → ab buttons par "ON/OFF" likha, support/block check ke saath sahi message
