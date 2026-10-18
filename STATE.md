@@ -1,6 +1,6 @@
 # MEXA SCALP — STATE
 
-**Current version:** v1.00 (2026-10-18)
+**Current version:** v1.01 (2026-10-18)
 **Live URL (main merge ke baad):** https://ankushchhajed7-cmd.github.io/MEXA-SCALP/
 
 ## Kya hai
@@ -17,6 +17,11 @@ Plan: Pehle app me trade karke signal check karo → sahi chala to **Step 2: MT5
 | STATE.md | Ye file |
 
 ## Version history
+- **v1.01** (2026-10-18) — Alert fixes (user feedback)
+  - Sound bahut kam tha → square wave + compressor, Volume Low/Med/High/MAX (default High), signal tone 3 baar
+  - Vibrate button: pehle tap par OFF ho jata tha (confusing) → ab buttons par "ON/OFF" likha, support/block check ke saath sahi message
+  - Notification: Android Chrome ke liye service-worker notification (`showNotification`), "support nahi" ki asli wajah batata hai (in-app browser / block / http)
+  - Settings me "▶ Test Alert" button; notification tap karne par app khulta hai
 - **v1.00** (2026-10-18) — First build
   - Live GOLD (PAXG/USDT) + BTC/USDT chart (Binance public feed, key nahi chahiye)
   - TF: 1 MIN / 5 MIN
@@ -39,8 +44,10 @@ Plan: Pehle app me trade karke signal check karo → sahi chala to **Step 2: MT5
 | Lot / TP / SL (Gold) | 0.01 / $3 / $2 |
 | Lot / TP / SL (BTC) | 0.01 / $150 / $100 |
 | Start balance | $1000 |
+| Volume | High (3 of 4) |
 
 ## Decisions
+- Alert sound phone ke **Media volume** se chalta hai; notification sirf tab jab app background me ho.
 - Data: Binance `data-api.binance.vision` + `data-stream.binance.vision` (market-data domain), fallback api.binance.com; WebSocket fail ho to 3 sec polling.
 - GOLD = PAXG/USDT (XAUUSD ke saath chalta hai, bilkul same nahi). XAUUSD asli feed ke liye API key wala source chahiye.
 - TP/SL report me agar ek hi candle me TP aur SL dono touch ho to **SL maana** (safe side).
