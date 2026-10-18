@@ -15,9 +15,11 @@ Plan: Pehle app me trade karke signal check karo → sahi chala to **Step 2: MT5
 | sw.js | Service worker (network-first, offline shell) |
 | icon-192.png / icon-512.png | Gold "MS" icon |
 | STATE.md | Ye file |
-| mt5/MEXA SCALP Signal v1.00.mq5 | MT5 indicator — same signal + phone push (phone lock ho tab bhi) |
+| mt5/MEXA SCALP Signal v1.00.mq5 | MT5 indicator — same signal + phone push (manual install, MQL5\Indicators) |
+| mt5/MEXA SCALP Signal EA v1.00.mq5 | Same signal, EA form (koi trade nahi) — VPS Helper se deploy (Samusignal repo `vps-ea/`) |
 
 ## Version history
+- **MT5 Signal EA v1.00** (2026-10-18) — `mt5/MEXA SCALP Signal EA v1.00.mq5`: indicator wala hi signal + push, par EA form me kyunki VPS Helper sirf MQL5\Experts me daalta hai. Koi trade nahi, Algo Trading OFF ho tab bhi chalta hai. VPS par bheja: Samusignal repo `vps-ea/` (main).
 - **MT5 Indicator v1.00** (2026-10-18) — `mt5/MEXA SCALP Signal v1.00.mq5`
   - App wala same EMA 9/21 + RSI 14 signal, sirf closed candle, asli XAUUSD data
   - SendNotification push (MT5 phone app) + popup Alert + sound, chart par arrows + EMA lines
@@ -66,7 +68,7 @@ Plan: Pehle app me trade karke signal check karo → sahi chala to **Step 2: MT5
 - Pocket Option / Olymp Trade se koi connection nahi (RBI Alert List platforms) — sirf practice + aage MT5.
 
 ## Pending / Next
-- [ ] VPS par MT5 indicator lagao + push test karo
+- [ ] VPS par **MEXA SCALP Signal EA** naye XAUUSD M1 chart par lagao (auto-compile ho chuka hoga) + push test karo
 - [ ] Kuch din app me trade karke Report check karo (30–50+ signals)
 - [ ] Best settings mile to **MT5 EA (MEXA SCALP EA)** — same EMA/RSI logic, TP/SL, XAUUSD M1/M5
 - [ ] APK via apk-factory (URL: Pages link)
