@@ -2,8 +2,10 @@
 <html lang="hi">
 <head>
 <!--
-  MEXA SCALP  v1.01  (2026-10-18)
+  MEXA SCALP  v1.02  (2026-10-18)
   ------------------------------------------------------------
+  v1.02
+   - Header me Demo Balance ke bagal ↻ Refresh button: App+Chart refresh / Demo balance reset
   v1.01
    - Sound bahut tez: square wave + compressor + Volume (Low/Med/High/Max), signal tone 3 baar
    - Sound/Vibrate/Notification buttons par saaf ON/OFF, alag "Test Alert" button
@@ -56,6 +58,14 @@ header{display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset
 .bal{background:var(--dark);color:#fff;border:1px solid var(--edge);border-radius:12px;padding:5px 10px;text-align:right;min-width:104px}
 .bal small{display:block;font-size:9px;color:var(--glow);font-weight:800;letter-spacing:1px}
 .bal span{font-weight:800;font-size:15px}
+.rbtn{width:40px;height:40px;border-radius:12px;font-size:22px;font-weight:900;color:var(--ink);display:grid;place-items:center;flex:none;border:1px solid rgba(0,0,0,.25)}
+.rbtn.spin{animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.rmenu{position:fixed;right:10px;top:calc(env(safe-area-inset-top) + 58px);background:var(--dark);border:2px solid var(--glow);border-radius:12px;padding:6px;z-index:60;display:none;min-width:220px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.rmenu.on{display:block}
+.rmenu button{display:block;width:100%;text-align:left;padding:12px 10px;border-radius:8px;background:none;color:#fff;font-weight:800;font-size:14px}
+.rmenu button:active{background:var(--dark2)}
+.rmenu small{display:block;font-size:10px;color:var(--mut);font-weight:600;margin-top:2px}
 
 /* chips */
 .chips{display:flex;gap:6px;padding:2px 12px 6px;align-items:center}
@@ -146,8 +156,9 @@ nav button.on{background:rgba(0,0,0,.78);color:var(--glow)}
 
 <header>
   <div class="logo metal">MS</div>
-  <div class="brand"><b>MEXA SCALP</b><small>PRACTICE · <span id="ver">v1.01</span></small></div>
+  <div class="brand"><b>MEXA SCALP</b><small>PRACTICE · <span id="ver">v1.02</span></small></div>
   <div class="bal"><small>DEMO BALANCE</small><span id="bal">$1,000.00</span></div>
+  <button class="rbtn metal" id="refBtn" title="Refresh">↻</button>
 </header>
 
 <div class="chips">
@@ -258,11 +269,15 @@ nav button.on{background:rgba(0,0,0,.78);color:var(--glow)}
   <button data-tab="shSet"><i>⚙️</i>Settings</button>
 </nav>
 <div class="toast" id="toast"></div>
+<div class="rmenu" id="rmenu">
+  <button id="rApp">🔄 App + Chart Refresh<small>Naya version + live data dobara load</small></button>
+  <button id="rBal">💰 Demo Balance Reset<small id="rBalSub">Balance wapas $1,000.00</small></button>
+</div>
 
 <script>
 'use strict';
 /* ================= CONFIG ================= */
-const VER = 'v1.01';
+const VER = 'v1.02';
 const LS_KEY = 'mexa_scalp_v1';
 const REST = ['https://data-api.binance.vision','https://api.binance.com','https://api1.binance.com','https://api3.binance.com'];
 const WSS  = ['wss://data-stream.binance.vision/ws/','wss://stream.binance.com:9443/ws/'];
@@ -814,6 +829,19 @@ $('saveSet').onclick=()=>{
   s.emaF=Math.max(2,Math.round(s.emaF)); s.emaS=Math.max(s.emaF+1,Math.round(s.emaS)); s.rsiP=Math.max(2,Math.round(s.rsiP));
   s.payout=Math.max(10,Math.min(100,s.payout));
   save(); calc(); dirty=true; renderControls(); fillSettings(); toast('✅ Settings save ho gayi');
+};
+// header refresh button
+$('refBtn').onclick=e=>{ e.stopPropagation(); $('rBalSub').textContent='Balance wapas '+fm(st.set.startBal); $('rmenu').classList.toggle('on'); };
+document.addEventListener('click',e=>{ if(!$('rmenu').contains(e.target)) $('rmenu').classList.remove('on'); });
+$('rApp').onclick=async()=>{
+  $('rmenu').classList.remove('on'); $('refBtn').classList.add('spin'); save();
+  try{ const r=navigator.serviceWorker && await navigator.serviceWorker.getRegistration(); if(r) await r.update(); }catch(e){}
+  setTimeout(()=>location.reload(),300);
+};
+$('rBal').onclick=()=>{
+  $('rmenu').classList.remove('on');
+  if(st.open.length){ toast('Pehle open trades band hone do'); return; }
+  if(confirm('Demo balance '+fm(st.set.startBal)+' par reset karein?')){ st.bal=st.set.startBal; save(); renderBal(); toast('Balance reset ✅'); }
 };
 $('resetAcc').onclick=()=>{
   const v=parseFloat($('sSB').value); if(isFinite(v)&&v>0) st.set.startBal=v;
