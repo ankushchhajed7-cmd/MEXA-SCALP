@@ -1,6 +1,6 @@
 # MEXA SCALP — STATE
 
-**Current version:** v1.08 (2026-10-18)
+**Current version:** v1.09 (2026-10-18)
 **Live URL (main merge ke baad):** https://ankushchhajed7-cmd.github.io/MEXA-SCALP/
 
 ## Kya hai
@@ -16,10 +16,16 @@ Plan: Pehle app me trade karke signal check karo → sahi chala to **Step 2: MT5
 | icon-192.png / icon-512.png | Gold "MS" icon |
 | STATE.md | Ye file |
 | mt5/MEXA SCALP Signal v1.00.mq5 | MT5 indicator — same signal + phone push (manual install, MQL5\Indicators) |
+| mt5/MEXA SCALP Trade EA v1.01.mq5 | **AUTO TRADE EA (latest)** — TP $5 / SL $2.5 + Profit Lock |
 | mt5/MEXA SCALP Trade EA v1.00.mq5 | **AUTO TRADE EA** — signal par khud trade (demo pe pehle) |
 | mt5/MEXA SCALP Signal EA v1.00.mq5 | Same signal, EA form (koi trade nahi) — VPS Helper se deploy (Samusignal repo `vps-ea/`) |
 
 ## Version history
+- **v1.09 + Trade EA v1.01** (2026-10-18) — 🔒 **Profit Lock** (user rule, price move me)
+  - $1 favour me → SL = entry + $0.50; har $0.10 aage → lock +$0.10 (1.10→0.60, 1.20→0.70, 2.00→1.50); lock kabhi peeche nahi
+  - App: TP/SL practice trades + Report dono me; Settings "🔒 Profit Lock" ON/OFF; chart par SL line peeli "🔒 +$x"; close reason LOCK; voice "प्रॉफिट लॉक"
+  - BTC par same anupaat: $30 ke baad $15 lock, har $3 par $3
+  - Trade EA v1.01: TP $5 / SL $2.5 (app ke saath same), LockCheck har tick par PositionModify, push pehle lock par + "LOCK HIT"
 - **v1.08** (2026-10-18) — user request
   - 📊 **TradingView chart** default (GOLD = OANDA:XAUUSD, BTC = BINANCE:BTCUSDT, EMA + RSI studies); "🕯 MS chart" button se MEXA chart (tir, trade lines) wapas
   - 📲 **MT5 kholo** button (Android intent → MT5 app, na ho to Play Store). APK me chalne ke liye apk-factory `feature-intent-links` merge + naya APK
@@ -85,6 +91,7 @@ Plan: Pehle app me trade karke signal check karo → sahi chala to **Step 2: MT5
 | Voice / Naam | ON / अंकुश |
 
 ## Decisions
+- Profit lock price move me (lot kuch bhi ho rule same). EA me candle-end BOOK rule bhi chalu hai — candle khatam hone par profit me ho to waise bhi book ho jaata hai; lock zyada tar candle ke beech aur loss se wapas aayi trade ko bachata hai.
 - TradingView widget iframe hai — uska data padh nahi sakte, isliye signal Binance (PAXG/BTC) se hi; gold me TV (XAUUSD) aur signal thoda alag ho sakta hai.
 - Trade EA: entry CLOSE recommend kiya (exit rule ko pura ~55 sec milta hai, repaint/cancel nahi, backtest sahi). LIVE input me rakha.
 - Honest risk: chhota profit book + poora $10 loss → approx 70%+ win chahiye; pehle demo + Strategy Tester (Every tick based on real ticks).

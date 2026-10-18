@@ -2,8 +2,12 @@
 <html lang="hi">
 <head>
 <!--
-  MEXA SCALP  v1.08  (2026-10-18)
+  MEXA SCALP  v1.09  (2026-10-18)
   ------------------------------------------------------------
+  v1.09
+   - 🔒 PROFIT LOCK (TP/SL trades): price $1 favour me jaate hi SL entry+$0.50 par (profit lock),
+     phir har $0.10 aage badhne par lock bhi $0.10 aage (1.10→0.60, 1.20→0.70 ...). Lock kabhi peeche nahi.
+     BTC par same anupaat: $30 ke baad $15 lock, har $3 par $3. Settings me ON/OFF. Report bhi lock ke saath.
   v1.08
    - 📊 TradingView chart (default): GOLD = OANDA:XAUUSD (asli spot gold), BTC = BINANCE:BTCUSDT,
      EMA + RSI ke saath; "🕯 MS chart" button se purana MEXA chart (tir + trade lines)
@@ -197,7 +201,7 @@ nav button.on{background:rgba(0,0,0,.78);color:var(--glow)}
 
 <header>
   <div class="logo metal">MS</div>
-  <div class="brand"><b>MEXA SCALP</b><small>PRACTICE · <span id="ver">v1.08</span></small></div>
+  <div class="brand"><b>MEXA SCALP</b><small>PRACTICE · <span id="ver">v1.09</span></small></div>
   <div class="bal"><small>DEMO BALANCE</small><span id="bal">$1,000.00</span></div>
   <button class="rbtn metal" id="refBtn" title="Refresh">↻</button>
 </header>
@@ -289,7 +293,7 @@ nav button.on{background:rgba(0,0,0,.78);color:var(--glow)}
     <h3>Theme</h3>
     <div class="tog" id="themeTog"><button data-th="gold">🥇 Gold Mirror</button><button data-th="silver">🥈 Silver Mirror</button></div>
     <h3>Signal (EMA + RSI)</h3>
-    <div class="tog"><button id="tLive">⚡ LIVE: ON</button></div>
+    <div class="tog"><button id="tLive">⚡ LIVE: ON</button><button id="tLock">🔒 Profit Lock: ON</button></div>
     <div class="note" style="margin:4px 0 8px">LIVE ON = cross hote hi signal (candle close ka intezaar nahi). Close par cross wapas hua to "सिग्नल कैंसल".</div>
     <div class="tog" id="presetTog" style="margin-bottom:8px"><button data-preset="fast">⚡ FAST 5/13 · RSI 7</button><button data-preset="normal">NORMAL 9/21 · RSI 14</button></div>
     <div class="set">
@@ -349,7 +353,7 @@ nav button.on{background:rgba(0,0,0,.78);color:var(--glow)}
 <script>
 'use strict';
 /* ================= CONFIG ================= */
-const VER = 'v1.08';
+const VER = 'v1.09';
 const LS_KEY = 'mexa_scalp_v1';
 const REST = ['https://data-api.binance.vision','https://api.binance.com','https://api1.binance.com','https://api3.binance.com'];
 const WSS  = ['wss://data-stream.binance.vision/ws/','wss://stream.binance.com:9443/ws/'];
@@ -361,7 +365,7 @@ const TF_SEC = {'1m':60,'5m':300};
 const EXP_LIST = [30,60,120,180,300,600,900];
 const AMT_LIST = [1,2,5,10,20,25,50,100,200,500,1000];
 const DEF = {sym:'PAXGUSDT',tf:'1m',mode:'expiry',expiry:60,amount:10,payout:85,lot:0.01,
-  tpsl:{PAXGUSDT:{tp:5,sl:2.5},BTCUSDT:{tp:150,sl:100}},chartTV:true,
+  tpsl:{PAXGUSDT:{tp:5,sl:2.5},BTCUSDT:{tp:150,sl:100}},chartTV:true,lock:true,
   emaF:5,emaS:13,rsiP:7,buyMin:50,buyMax:80,sellMin:20,sellMax:50,live:true,
   sound:true,vib:true,notif:false,vol:3,wake:false,voice:true,vname:'अंकुश',theme:'gold',startBal:1000};
 
@@ -375,6 +379,12 @@ let view = {n:70, off:0};
 let dirty = true, banTimer = null, pulseUntil = 0, pulseSide = 0;
 const $ = id => document.getElementById(id);
 
+// 🔒 Profit lock (price move): start ke baad keep jitna lock, har step par step aage
+const LOCK={PAXGUSDT:{start:1.0,keep:0.5,step:0.1},BTCUSDT:{start:30,keep:15,step:3}};
+function lockMove(sym, move){
+  const L=LOCK[sym]; if(!L || move < L.start-1e-9) return null;
+  return L.keep + Math.floor((move-L.start)/L.step + 1e-9)*L.step;   // kitna price move lock
+}
 const PRESETS={
   fast:  {emaF:5, emaS:13, rsiP:7,  buyMin:50, buyMax:80, sellMin:20, sellMax:50},
   normal:{emaF:9, emaS:21, rsiP:14, buyMin:50, buyMax:70, sellMin:30, sellMax:50}
@@ -455,15 +465,14 @@ function evalSig(sg, mode){
     return {r:win?'W':'L', pl: win ? s.amount*s.payout/100 : -s.amount, x};
   }
   const ts=s.tpsl[s.sym], tp=ts.tp, sl=ts.sl, val=s.lot*a.contract;
+  let stopMv=-sl;                                   // SL ka move (entry se); lock ke baad plus
   for(let j=sg.i+1;j<C.length;j++){
     const c=C[j];
-    if(sg.side>0){
-      if(c.l<=e-sl) return {r:'L',pl:-sl*val};      // SL pehle check (safe side)
-      if(c.h>=e+tp) return {r:'W',pl:tp*val};
-    }else{
-      if(c.h>=e+sl) return {r:'L',pl:-sl*val};
-      if(c.l<=e-tp) return {r:'W',pl:tp*val};
-    }
+    const adverse = sg.side>0 ? c.l-e : e-c.h;      // sabse bura move is candle me
+    const fav     = sg.side>0 ? c.h-e : e-c.l;      // sabse achha move
+    if(adverse<=stopMv){ const pl=stopMv*val; return {r:pl>0?'W':'L',pl,lock:stopMv>0}; }  // SL/lock pehle (safe side)
+    if(fav>=tp) return {r:'W',pl:tp*val};
+    if(s.lock){ const lm=lockMove(s.sym,fav); if(lm!==null && lm>stopMv) stopMv=lm; }
   }
   return {r:'P',pl:0};
 }
@@ -716,9 +725,16 @@ function onTick(){
   const now=Date.now();
   for(const t of st.open.slice()){
     if(t.sym!==st.set.sym) continue;
+    if(t.mode==='tpsl' && st.set.lock){
+      const lm=lockMove(t.sym,(price-t.entry)*t.side);
+      if(lm!==null){ const np=t.entry+t.side*lm;
+        if((t.side>0 && np>t.slP+1e-9) || (t.side<0 && np<t.slP-1e-9)){
+          const first=!t.locked; t.slP=np; t.locked=true; save(); dirty=true;
+          if(first){ toast('🔒 Profit lock: '+fm(lm*t.lot*t.contract,true)); if(st.set.voice) speak('प्रॉफिट लॉक'); } } }
+    }
     if(t.mode==='expiry'){ if(now>=t.t1) closeTrade(t,price,'expiry'); }
-    else if(t.side>0){ if(price>=t.tpP) closeTrade(t,t.tpP,'TP'); else if(price<=t.slP) closeTrade(t,t.slP,'SL'); }
-    else { if(price<=t.tpP) closeTrade(t,t.tpP,'TP'); else if(price>=t.slP) closeTrade(t,t.slP,'SL'); }
+    else if(t.side>0){ if(price>=t.tpP) closeTrade(t,t.tpP,'TP'); else if(price<=t.slP) closeTrade(t,t.slP,t.locked?'LOCK':'SL'); }
+    else { if(price<=t.tpP) closeTrade(t,t.tpP,'TP'); else if(price>=t.slP) closeTrade(t,t.slP,t.locked?'LOCK':'SL'); }
   }
 }
 setInterval(()=>{ onTick(); updPulse(); dirty=true; if($('shTrades').classList.contains('on')) updOpenLive(); },250);
@@ -818,7 +834,7 @@ function draw(){
     }else{
       const pl=(price-t.entry)*t.side*t.lot*t.contract;
       hl(Y(t.entry),col,(t.side>0?'▲ ':'▼ ')+t.lot+' lot  '+fm(pl,true),[5,4]);
-      hl(Y(t.tpP),'rgba(22,199,132,.8)','TP',[2,3]); hl(Y(t.slP),'rgba(234,57,67,.8)','SL',[2,3]);
+      hl(Y(t.tpP),'rgba(22,199,132,.8)','TP',[2,3]); hl(Y(t.slP),t.locked?'rgba(245,185,66,.9)':'rgba(234,57,67,.8)',t.locked?'🔒 '+fm((t.slP-t.entry)*t.side*t.lot*t.contract,true):'SL',[2,3]);
     }
   }
   ctx.font='bold 10px system-ui'; ctx.textAlign='left';
@@ -964,11 +980,12 @@ function renderControls(){
   $('iExp').innerHTML=`Payout <span class="g">+${s.payout}%</span> · Jeet <span class="g">${fm(s.amount*s.payout/100,true)}</span> · Haar <span class="r">${fm(-s.amount)}</span>`;
   $('vLot').textContent=s.lot.toFixed(2); $('vTp').textContent=ts.tp.toFixed(a.step<1?1:0); $('vSl').textContent=ts.sl.toFixed(a.step<1?1:0);
   const val=s.lot*a.contract;
-  $('iTp').innerHTML=`TP par <span class="g">${fm(ts.tp*val,true)}</span> · SL par <span class="r">${fm(-ts.sl*val)}</span> · RR 1:${(ts.tp/ts.sl).toFixed(2)}`;
+  $('iTp').innerHTML=`TP par <span class="g">${fm(ts.tp*val,true)}</span> · SL par <span class="r">${fm(-ts.sl*val)}</span> · RR 1:${(ts.tp/ts.sl).toFixed(2)}${s.lock&&LOCK[s.sym]?' · 🔒 $'+LOCK[s.sym].start+' baad lock':''}`;
   document.body.className=s.theme;
   document.querySelector('meta[name=theme-color]').content = s.theme==='gold'?'#b8892c':'#9aa0a6';
   document.querySelectorAll('[data-th]').forEach(b=>b.classList.toggle('on',b.dataset.th===s.theme));
   $('tSnd').classList.toggle('on',s.sound); $('tVib').classList.toggle('on',s.vib); $('tNot').classList.toggle('on',s.notif);
+  $('tLock').classList.toggle('on',s.lock); $('tLock').textContent='🔒 Profit Lock: '+(s.lock?'ON':'OFF');
   $('tLive').classList.toggle('on',s.live); $('tLive').textContent='⚡ LIVE: '+(s.live?'ON':'OFF');
   const pr=Object.keys(PRESETS).find(k=>Object.entries(PRESETS[k]).every(([a,v])=>s[a]===v));
   document.querySelectorAll('[data-preset]').forEach(b=>b.classList.toggle('on',b.dataset.preset===pr));
@@ -1138,6 +1155,7 @@ $('tNot').onclick=async()=>{
   st.set.notif=!st.set.notif; save(); renderControls();
 };
 document.querySelectorAll('[data-vol]').forEach(b=>b.onclick=()=>{ st.set.vol=+b.dataset.vol; save(); renderControls(); unlockAudio(); beep(988,.2); });
+$('tLock').onclick=()=>{ st.set.lock=!st.set.lock; save(); renderControls(); if($('shReport').classList.contains('on')) renderReport(); toast(st.set.lock?'🔒 Profit Lock ON — $1 ke baad $0.50 lock, har $0.10 par +$0.10':'Profit Lock OFF'); };
 $('tLive').onclick=()=>{ st.set.live=!st.set.live; if(!st.set.live) liveSig=null; save(); renderControls(); toast(st.set.live?'⚡ LIVE signal ON — cross hote hi alert':'LIVE OFF — sirf candle close par signal'); };
 document.querySelectorAll('[data-preset]').forEach(b=>b.onclick=()=>{ Object.assign(st.set, PRESETS[b.dataset.preset]); liveSig=null; save(); calc(); dirty=true; tvKey=''; if(st.set.chartTV) renderTV(false); renderControls(); fillSettings(); toast(b.dataset.preset==='fast'?'⚡ FAST preset lag gaya':'NORMAL preset lag gaya'); });
 $('tVoice').onclick=()=>{ st.set.voice=!st.set.voice; save(); renderControls(); if(st.set.voice && !speak('वॉइस अलर्ट चालू')) toast('Is browser me voice support nahi — Chrome me kholo'); };
