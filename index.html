@@ -2,8 +2,13 @@
 <html lang="hi">
 <head>
 <!--
-  MEXA SCALP  v1.00  (2026-10-18)
+  MEXA SCALP  v1.01  (2026-10-18)
   ------------------------------------------------------------
+  v1.01
+   - Sound bahut tez: square wave + compressor + Volume (Low/Med/High/Max), signal tone 3 baar
+   - Sound/Vibrate/Notification buttons par saaf ON/OFF, alag "Test Alert" button
+   - Vibrate: support/block check + lambi vibration pattern
+   - Notification: Android ke liye service-worker notification, support na ho to sahi wajah batata hai
   v1.00
    - Pocket Option style practice app (virtual DEMO balance)
    - Live GOLD (PAXG/USDT) + BTC/USDT chart, Binance public feed (no key)
@@ -141,7 +146,7 @@ nav button.on{background:rgba(0,0,0,.78);color:var(--glow)}
 
 <header>
   <div class="logo metal">MS</div>
-  <div class="brand"><b>MEXA SCALP</b><small>PRACTICE · <span id="ver">v1.00</span></small></div>
+  <div class="brand"><b>MEXA SCALP</b><small>PRACTICE · <span id="ver">v1.01</span></small></div>
   <div class="bal"><small>DEMO BALANCE</small><span id="bal">$1,000.00</span></div>
 </header>
 
@@ -232,7 +237,11 @@ nav button.on{background:rgba(0,0,0,.78);color:var(--glow)}
       <label>SELL: RSI max<input type="number" id="sSMax" min="0" max="100"></label>
     </div>
     <h3>Alert</h3>
-    <div class="tog"><button id="tSnd">🔊 Sound</button><button id="tVib">📳 Vibrate</button><button id="tNot">🔔 Notification</button></div>
+    <div class="tog"><button id="tSnd">🔊 Sound</button><button id="tVib">📳 Vibrate</button><button id="tNot">🔔 Notif</button></div>
+    <div class="note" style="margin:8px 0 4px">Volume</div>
+    <div class="tog" id="volTog"><button data-vol="1">Low</button><button data-vol="2">Med</button><button data-vol="3">High</button><button data-vol="4">MAX</button></div>
+    <button class="btn" id="testAlert">▶ Test Alert (sound + vibrate + notif)</button>
+    <div class="note">Awaaz phone ke <b>Media volume</b> se chalti hai (ringer se nahi) — phone ka volume button dabakar media volume full karo.</div>
     <button class="btn" id="saveSet">✅ Save Settings</button>
     <h3>Demo Account</h3>
     <div class="set"><label>Start balance ($)<input type="number" id="sSB" min="10" step="10"></label></div>
@@ -253,7 +262,7 @@ nav button.on{background:rgba(0,0,0,.78);color:var(--glow)}
 <script>
 'use strict';
 /* ================= CONFIG ================= */
-const VER = 'v1.00';
+const VER = 'v1.01';
 const LS_KEY = 'mexa_scalp_v1';
 const REST = ['https://data-api.binance.vision','https://api.binance.com','https://api1.binance.com','https://api3.binance.com'];
 const WSS  = ['wss://data-stream.binance.vision/ws/','wss://stream.binance.com:9443/ws/'];
@@ -267,7 +276,7 @@ const AMT_LIST = [1,2,5,10,20,25,50,100,200,500,1000];
 const DEF = {sym:'PAXGUSDT',tf:'1m',mode:'expiry',expiry:60,amount:10,payout:85,lot:0.01,
   tpsl:{PAXGUSDT:{tp:3,sl:2},BTCUSDT:{tp:150,sl:100}},
   emaF:9,emaS:21,rsiP:14,buyMin:50,buyMax:70,sellMin:30,sellMax:50,
-  sound:true,vib:true,notif:false,theme:'gold',startBal:1000};
+  sound:true,vib:true,notif:false,vol:3,theme:'gold',startBal:1000};
 
 /* ================= STATE ================= */
 let st = {set:JSON.parse(JSON.stringify(DEF)), bal:DEF.startBal, open:[], hist:[]};
@@ -454,12 +463,22 @@ setInterval(()=>{ // watchdog: ws chup ho gaya to polling
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden && (Date.now()-lastMsg>20000)) start(); });
 
 /* ================= SIGNAL ALERT ================= */
-let actx=null;
-function unlockAudio(){ if(!actx){ try{ actx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } if(actx&&actx.state==='suspended') actx.resume(); }
+let actx=null, master=null;
+const VOLS=[0,0.6,1.2,2.2,3.5];
+function unlockAudio(){
+  if(!actx){ try{ actx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} }
+  if(actx && !master){
+    const comp=actx.createDynamicsCompressor();
+    comp.threshold.value=-24; comp.knee.value=6; comp.ratio.value=16; comp.attack.value=0.002; comp.release.value=0.08;
+    master=actx.createGain(); master.connect(comp); comp.connect(actx.destination);
+  }
+  if(master) master.gain.value=VOLS[st.set.vol]||VOLS[3];
+  if(actx&&actx.state==='suspended') actx.resume();
+}
 function beep(freq,dur,when){
-  if(!actx) return; const o=actx.createOscillator(), g=actx.createGain();
-  o.type='sine'; o.frequency.value=freq; o.connect(g); g.connect(actx.destination);
-  const t=actx.currentTime+(when||0); g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.4,t+0.02);
+  if(!actx||!master) return; const o=actx.createOscillator(), g=actx.createGain();
+  o.type='square'; o.frequency.value=freq; o.connect(g); g.connect(master);
+  const t=actx.currentTime+(when||0); g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.9,t+0.01);
   g.gain.exponentialRampToValueAtTime(0.0001,t+dur); o.start(t); o.stop(t+dur+0.02);
 }
 function onSignal(sg){
@@ -468,11 +487,29 @@ function onSignal(sg){
   b.textContent=(buy?'🟢 BUY SIGNAL ':'🔴 SELL SIGNAL ')+'· '+fp(sg.price)+' · RSI '+sg.rsi.toFixed(0);
   clearTimeout(banTimer); banTimer=setTimeout(()=>{b.className='banner';},25000);
   pulseSide=sg.side; pulseUntil=Date.now()+tfMs(); updPulse();
-  if(s.sound){ if(buy){beep(880,.15);beep(1175,.2,.18);} else {beep(660,.15);beep(440,.25,.18);} }
-  if(s.vib && navigator.vibrate) navigator.vibrate(buy?[120,80,120]:[300]);
-  if(s.notif && document.hidden && 'Notification' in window && Notification.permission==='granted'){
-    try{ new Notification('MEXA SCALP · '+(buy?'BUY':'SELL')+' signal',{body:A().name+' '+st.set.tf.toUpperCase()+' @ '+fp(sg.price),icon:'icon-192.png',tag:'mexa-sig'}); }catch(e){}
-  }
+  alertNow(buy, 'MEXA SCALP · '+(buy?'BUY':'SELL')+' signal', A().name+' '+st.set.tf.toUpperCase()+' @ '+fp(sg.price), document.hidden);
+}
+function sigSound(buy){ for(let k=0;k<3;k++){ const w=k*0.55; if(buy){beep(988,.16,w);beep(1319,.22,w+.2);} else {beep(784,.16,w);beep(523,.26,w+.2);} } }
+function doVib(pat){
+  if(!('vibrate' in navigator)) return 'nosupport';
+  try{ return navigator.vibrate(pat) ? 'ok' : 'blocked'; }catch(e){ return 'blocked'; }
+}
+function notifState(){
+  if(!window.isSecureContext) return 'insecure';
+  if(!('Notification' in window) || !('serviceWorker' in navigator)) return 'nosupport';
+  return Notification.permission; // granted | denied | default
+}
+async function showNotif(title, body){
+  if(notifState()!=='granted') return false;
+  try{ const reg=await navigator.serviceWorker.ready;
+    await reg.showNotification(title,{body,icon:'icon-192.png',badge:'icon-192.png',tag:'mexa-sig',renotify:true,vibrate:[300,120,300,120,300]}); return true;
+  }catch(e){ try{ new Notification(title,{body,icon:'icon-192.png'}); return true; }catch(e2){ return false; } }
+}
+function alertNow(buy,title,body,withNotif){
+  const s=st.set;
+  if(s.sound){ unlockAudio(); sigSound(buy); }
+  if(s.vib) doVib(buy?[250,120,250,120,250]:[600,150,600]);
+  if(s.notif && withNotif) showNotif(title,body);
 }
 function updPulse(){
   const on=Date.now()<pulseUntil;
@@ -498,7 +535,7 @@ function openTrade(side){
     const ts=s.tpsl[s.sym];
     st.open.push(Object.assign(base,{mode:'tpsl',lot:s.lot,contract:a.contract,tpP:price+side*ts.tp,slP:price-side*ts.sl}));
   }
-  if(s.vib&&navigator.vibrate) navigator.vibrate(30);
+  if(s.vib) doVib(40);
   save(); renderBal(); dirty=true; if($('shTrades').classList.contains('on')) renderTrades();
 }
 function closeTrade(t, exit, why){
@@ -671,6 +708,8 @@ function renderControls(){
   document.querySelector('meta[name=theme-color]').content = s.theme==='gold'?'#b8892c':'#9aa0a6';
   document.querySelectorAll('[data-th]').forEach(b=>b.classList.toggle('on',b.dataset.th===s.theme));
   $('tSnd').classList.toggle('on',s.sound); $('tVib').classList.toggle('on',s.vib); $('tNot').classList.toggle('on',s.notif);
+  $('tSnd').textContent='🔊 Sound: '+(s.sound?'ON':'OFF'); $('tVib').textContent='📳 Vibrate: '+(s.vib?'ON':'OFF'); $('tNot').textContent='🔔 Notif: '+(s.notif?'ON':'OFF');
+  document.querySelectorAll('[data-vol]').forEach(b=>b.classList.toggle('on',+b.dataset.vol===s.vol));
 }
 function stepVal(k,d){
   const s=st.set, a=A(), ts=s.tpsl[s.sym];
@@ -782,18 +821,37 @@ $('resetAcc').onclick=()=>{
   if(confirm('Demo balance '+fm(st.set.startBal)+' par reset karein?')){ st.bal=st.set.startBal; save(); renderBal(); toast('Balance reset ✅'); }
 };
 document.querySelectorAll('[data-th]').forEach(b=>b.onclick=()=>{ st.set.theme=b.dataset.th; save(); renderControls(); });
-$('tSnd').onclick=()=>{ unlockAudio(); st.set.sound=!st.set.sound; save(); renderControls(); if(st.set.sound) beep(880,.12); };
-$('tVib').onclick=()=>{ st.set.vib=!st.set.vib; save(); renderControls(); if(st.set.vib&&navigator.vibrate) navigator.vibrate(60); };
+$('tSnd').onclick=()=>{ st.set.sound=!st.set.sound; save(); renderControls(); unlockAudio(); if(st.set.sound) beep(988,.18); };
+$('tVib').onclick=()=>{
+  st.set.vib=!st.set.vib; save(); renderControls();
+  if(st.set.vib){ const r=doVib([200,100,200]);
+    if(r==='nosupport') toast('Is browser me vibrate nahi chalta — app ko Chrome me ya Home-screen icon se kholo');
+    else if(r==='blocked') toast('Vibrate block hai — phone Settings me Vibration / Touch feedback ON karo, Silent/DND hatao'); }
+};
+const NOT_MSG={insecure:'Notification ke liye https link chahiye (github.io wala link kholo)',
+  nosupport:'Ye browser notification nahi deta (shayad kisi app ke andar khula hai) — link Chrome me kholo, phir "Add to Home screen" karo',
+  denied:'Notification block hai — Chrome ⋮ → Settings → Site settings → Notifications me is site ko Allow karo'};
 $('tNot').onclick=async()=>{
   if(!st.set.notif){
-    if(!('Notification' in window)){ toast('Is phone par notification support nahi'); return; }
-    const p=await Notification.requestPermission(); if(p!=='granted'){ toast('Notification permission nahi mili'); return; }
+    let n=notifState();
+    if(n==='default'){ try{ n=await Notification.requestPermission(); }catch(e){ n='denied'; } }
+    if(n!=='granted'){ toast(NOT_MSG[n]||NOT_MSG.denied); return; }
   }
   st.set.notif=!st.set.notif; save(); renderControls();
 };
+document.querySelectorAll('[data-vol]').forEach(b=>b.onclick=()=>{ st.set.vol=+b.dataset.vol; save(); renderControls(); unlockAudio(); beep(988,.2); });
+$('testAlert').onclick=async()=>{
+  unlockAudio(); const s=st.set;
+  if(s.sound) sigSound(true);
+  let msg=[];
+  if(!s.sound) msg.push('Sound OFF hai');
+  if(s.vib){ const r=doVib([250,120,250,120,250]); if(r!=='ok') msg.push(r==='nosupport'?'Vibrate support nahi':'Vibrate block'); } else msg.push('Vibrate OFF hai');
+  if(s.notif){ const ok=await showNotif('MEXA SCALP · Test','Notification chal raha hai ✅'); if(!ok) msg.push('Notif nahi gaya'); } 
+  toast(msg.length? '⚠️ '+msg.join(' · ') : '✅ Alert test ho gaya');
+};
 
 let toastT=null;
-function toast(msg,cls){ const t=$('toast'); t.textContent=msg; t.className='toast '+(cls||''); t.style.display='block'; clearTimeout(toastT); toastT=setTimeout(()=>t.style.display='none',2200); }
+function toast(msg,cls){ const t=$('toast'); t.textContent=msg; t.className='toast '+(cls||''); t.style.display='block'; clearTimeout(toastT); toastT=setTimeout(()=>t.style.display='none',Math.min(7000,1800+msg.length*45)); }
 document.addEventListener('click',unlockAudio,{once:true});
 
 /* ================= BOOT ================= */
