@@ -2,8 +2,10 @@
 <html lang="hi">
 <head>
 <!--
-  MEXA SCALP  v1.02  (2026-10-18)
+  MEXA SCALP  v1.03  (2026-10-18)
   ------------------------------------------------------------
+  v1.03
+   - "🔆 SCREEN" ON/OFF button (chips row): app khula rahe to screen band nahi hogi (Wake Lock), setting yaad rehti hai
   v1.02
    - Header me Demo Balance ke bagal ↻ Refresh button: App+Chart refresh / Demo balance reset
   v1.01
@@ -52,8 +54,8 @@ header{display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset
   color:var(--ink);border:2px solid rgba(0,0,0,.3);position:relative;overflow:hidden;flex:none}
 .logo::after{content:"";position:absolute;inset:-40%;background:linear-gradient(115deg,transparent 40%,rgba(255,255,255,.85) 50%,transparent 60%);animation:sweep 4s linear infinite}
 @keyframes sweep{0%{transform:translateX(-60%)}100%{transform:translateX(60%)}}
-.brand{flex:1;line-height:1.05}
-.brand b{font-size:19px;font-weight:900;letter-spacing:1.5px;text-shadow:0 1px 0 rgba(255,255,255,.6)}
+.brand{flex:1;line-height:1.05;min-width:0;overflow:hidden}
+.brand b{white-space:nowrap;font-size:clamp(15px,4.8vw,19px);font-weight:900;letter-spacing:1.5px;text-shadow:0 1px 0 rgba(255,255,255,.6)}
 .brand small{display:block;font-size:10px;font-weight:700;opacity:.75;letter-spacing:1px}
 .bal{background:var(--dark);color:#fff;border:1px solid var(--edge);border-radius:12px;padding:5px 10px;text-align:right;min-width:104px}
 .bal small{display:block;font-size:9px;color:var(--glow);font-weight:800;letter-spacing:1px}
@@ -68,10 +70,13 @@ header{display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset
 .rmenu small{display:block;font-size:10px;color:var(--mut);font-weight:600;margin-top:2px}
 
 /* chips */
-.chips{display:flex;gap:6px;padding:2px 12px 6px;align-items:center}
-.chip{background:rgba(0,0,0,.16);color:var(--ink);border-radius:9px;padding:6px 10px;font-size:12px;font-weight:800;border:2px solid transparent}
+.chips{display:flex;gap:6px;padding:2px 12px 6px;align-items:center;overflow-x:auto;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{background:rgba(0,0,0,.16);color:var(--ink);border-radius:9px;padding:6px 9px;font-size:12px;font-weight:800;border:2px solid transparent;white-space:nowrap;flex:none}
 .chip.on{background:#05070a;color:var(--glow);border-color:var(--glow);box-shadow:0 0 0 1.5px var(--ink)}
-.dot{width:9px;height:9px;border-radius:50%;background:#888;margin-left:auto;box-shadow:0 0 6px currentColor}
+.dot{width:9px;height:9px;border-radius:50%;background:#888;margin-left:auto;box-shadow:0 0 6px currentColor;flex:none}
+.wake{padding:4px 8px;line-height:1.05;text-align:center}
+.wake small{display:block;font-size:8px;letter-spacing:.5px}
 .dot.ok{background:var(--up);color:var(--up)}.dot.bad{background:var(--dn);color:var(--dn)}.dot.wait{background:#f59e0b;color:#f59e0b}
 
 /* main */
@@ -156,7 +161,7 @@ nav button.on{background:rgba(0,0,0,.78);color:var(--glow)}
 
 <header>
   <div class="logo metal">MS</div>
-  <div class="brand"><b>MEXA SCALP</b><small>PRACTICE · <span id="ver">v1.02</span></small></div>
+  <div class="brand"><b>MEXA SCALP</b><small>PRACTICE · <span id="ver">v1.03</span></small></div>
   <div class="bal"><small>DEMO BALANCE</small><span id="bal">$1,000.00</span></div>
   <button class="rbtn metal" id="refBtn" title="Refresh">↻</button>
 </header>
@@ -167,6 +172,7 @@ nav button.on{background:rgba(0,0,0,.78);color:var(--glow)}
   <button class="chip" data-tf="1m">1 MIN</button>
   <button class="chip" data-tf="5m">5 MIN</button>
   <span class="dot wait" id="dot" title="connection"></span>
+  <button class="chip wake" id="wakeBtn">🔆 OFF<small>SCREEN</small></button>
 </div>
 
 <div id="main">
@@ -277,7 +283,7 @@ nav button.on{background:rgba(0,0,0,.78);color:var(--glow)}
 <script>
 'use strict';
 /* ================= CONFIG ================= */
-const VER = 'v1.02';
+const VER = 'v1.03';
 const LS_KEY = 'mexa_scalp_v1';
 const REST = ['https://data-api.binance.vision','https://api.binance.com','https://api1.binance.com','https://api3.binance.com'];
 const WSS  = ['wss://data-stream.binance.vision/ws/','wss://stream.binance.com:9443/ws/'];
@@ -291,7 +297,7 @@ const AMT_LIST = [1,2,5,10,20,25,50,100,200,500,1000];
 const DEF = {sym:'PAXGUSDT',tf:'1m',mode:'expiry',expiry:60,amount:10,payout:85,lot:0.01,
   tpsl:{PAXGUSDT:{tp:3,sl:2},BTCUSDT:{tp:150,sl:100}},
   emaF:9,emaS:21,rsiP:14,buyMin:50,buyMax:70,sellMin:30,sellMax:50,
-  sound:true,vib:true,notif:false,vol:3,theme:'gold',startBal:1000};
+  sound:true,vib:true,notif:false,vol:3,wake:false,theme:'gold',startBal:1000};
 
 /* ================= STATE ================= */
 let st = {set:JSON.parse(JSON.stringify(DEF)), bal:DEF.startBal, open:[], hist:[]};
@@ -830,6 +836,22 @@ $('saveSet').onclick=()=>{
   s.payout=Math.max(10,Math.min(100,s.payout));
   save(); calc(); dirty=true; renderControls(); fillSettings(); toast('✅ Settings save ho gayi');
 };
+// screen on (wake lock)
+let wakeLock=null;
+async function applyWake(showMsg){
+  const on=st.set.wake;
+  $('wakeBtn').classList.toggle('on',on);
+  $('wakeBtn').innerHTML=(on?'🔆 ON':'🔅 OFF')+'<small>SCREEN</small>';
+  if(!on){ if(wakeLock){ try{ await wakeLock.release(); }catch(e){} wakeLock=null; } return; }
+  if(!('wakeLock' in navigator)){ if(showMsg) toast('Is browser me Screen ON support nahi — Chrome me kholo'); return; }
+  if(document.hidden || (wakeLock && !wakeLock.released)) return;
+  try{ wakeLock=await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release',()=>{ wakeLock=null; });
+    if(showMsg) toast('🔆 Screen ON — app khula rahega to screen band nahi hogi'); }
+  catch(e){ if(showMsg) toast('Screen ON nahi hua — Battery saver band karke dobara try karo'); }
+}
+$('wakeBtn').onclick=()=>{ st.set.wake=!st.set.wake; save(); applyWake(true); if(!st.set.wake) toast('🔅 Screen OFF — phone apne time par band hoga'); };
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden && st.set.wake) applyWake(false); });
+
 // header refresh button
 $('refBtn').onclick=e=>{ e.stopPropagation(); $('rBalSub').textContent='Balance wapas '+fm(st.set.startBal); $('rmenu').classList.toggle('on'); };
 document.addEventListener('click',e=>{ if(!$('rmenu').contains(e.target)) $('rmenu').classList.remove('on'); });
@@ -885,7 +907,8 @@ document.addEventListener('click',unlockAudio,{once:true});
 /* ================= BOOT ================= */
 load();
 $('ver').textContent=VER;
-renderControls(); renderBal(); resize(); requestAnimationFrame(loop); start();
+renderControls(); renderBal(); resize(); requestAnimationFrame(loop); start(); applyWake(false);
+document.addEventListener('click',()=>{ if(st.set.wake && !wakeLock) applyWake(false); });
 if('serviceWorker' in navigator){ window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }
 </script>
 </body>
