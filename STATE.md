@@ -1,6 +1,6 @@
 # MEXA SCALP — STATE
 
-**Current version:** v1.03 (2026-10-18)
+**Current version:** v1.04 (2026-10-18)
 **Live URL (main merge ke baad):** https://ankushchhajed7-cmd.github.io/MEXA-SCALP/
 
 ## Kya hai
@@ -19,6 +19,7 @@ Plan: Pehle app me trade karke signal check karo → sahi chala to **Step 2: MT5
 | mt5/MEXA SCALP Signal EA v1.00.mq5 | Same signal, EA form (koi trade nahi) — VPS Helper se deploy (Samusignal repo `vps-ea/`) |
 
 ## Version history
+- **v1.04** (2026-10-18) — 🗣 **Voice alert**: signal par phone ki Hindi voice bolti hai "हेलो अंकुश, गोल्ड में बाय/सेल सिग्नल आया है"; trade WIN/LOSS bhi bolta hai. Settings: Voice ON/OFF, naam badlo, Voice Test. (Voice ON ho to beep 1 baar, phir awaaz)
 - **MT5 Signal EA v1.00** (2026-10-18) — `mt5/MEXA SCALP Signal EA v1.00.mq5`: indicator wala hi signal + push, par EA form me kyunki VPS Helper sirf MQL5\Experts me daalta hai. Koi trade nahi, Algo Trading OFF ho tab bhi chalta hai. VPS par bheja: Samusignal repo `vps-ea/` (main).
 - **MT5 Indicator v1.00** (2026-10-18) — `mt5/MEXA SCALP Signal v1.00.mq5`
   - App wala same EMA 9/21 + RSI 14 signal, sirf closed candle, asli XAUUSD data
@@ -57,8 +58,10 @@ Plan: Pehle app me trade karke signal check karo → sahi chala to **Step 2: MT5
 | Start balance | $1000 |
 | Volume | High (3 of 4) |
 | Screen ON | OFF (default) |
+| Voice / Naam | ON / अंकुश |
 
 ## Decisions
+- Voice phone ke Text-to-speech (Google TTS) se — offline file nahi. MT5 push ki tune MT5 app khud tay karta hai, EA se badal nahi sakte.
 - Phone lock / app band hone par signal nahi aata (signal phone ke app me banta hai). Screen ON button jugaad hai; asli background alert ke liye aage MT5 indicator + SendNotification (push) plan.
 - Alert sound phone ke **Media volume** se chalta hai; notification sirf tab jab app background me ho.
 - Data: Binance `data-api.binance.vision` + `data-stream.binance.vision` (market-data domain), fallback api.binance.com; WebSocket fail ho to 3 sec polling.

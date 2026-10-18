@@ -2,8 +2,11 @@
 <html lang="hi">
 <head>
 <!--
-  MEXA SCALP  v1.03  (2026-10-18)
+  MEXA SCALP  v1.04  (2026-10-18)
   ------------------------------------------------------------
+  v1.04
+   - 🗣 Voice alert: signal par bolta hai "हेलो अंकुश, गोल्ड में बाय सिग्नल आया है" (phone ki Hindi voice)
+   - Settings: Voice ON/OFF + apna naam + Voice test; trade WIN/LOSS bhi bolta hai
   v1.03
    - "🔆 SCREEN" ON/OFF button (chips row): app khula rahe to screen band nahi hogi (Wake Lock), setting yaad rehti hai
   v1.02
@@ -161,7 +164,7 @@ nav button.on{background:rgba(0,0,0,.78);color:var(--glow)}
 
 <header>
   <div class="logo metal">MS</div>
-  <div class="brand"><b>MEXA SCALP</b><small>PRACTICE · <span id="ver">v1.03</span></small></div>
+  <div class="brand"><b>MEXA SCALP</b><small>PRACTICE · <span id="ver">v1.04</span></small></div>
   <div class="bal"><small>DEMO BALANCE</small><span id="bal">$1,000.00</span></div>
   <button class="rbtn metal" id="refBtn" title="Refresh">↻</button>
 </header>
@@ -257,7 +260,10 @@ nav button.on{background:rgba(0,0,0,.78);color:var(--glow)}
     <div class="tog"><button id="tSnd">🔊 Sound</button><button id="tVib">📳 Vibrate</button><button id="tNot">🔔 Notif</button></div>
     <div class="note" style="margin:8px 0 4px">Volume</div>
     <div class="tog" id="volTog"><button data-vol="1">Low</button><button data-vol="2">Med</button><button data-vol="3">High</button><button data-vol="4">MAX</button></div>
-    <button class="btn" id="testAlert">▶ Test Alert (sound + vibrate + notif)</button>
+    <div class="note" style="margin:10px 0 4px">🗣 Voice alert (bolkar batayega)</div>
+    <div class="tog"><button id="tVoice">🗣 Voice: ON</button><button id="tVoiceTest">▶ Voice Test</button></div>
+    <div class="set" style="margin-top:8px"><label>Aapka naam (voice me)<input type="text" id="sVName" maxlength="20"></label><label>&nbsp;<button class="btn" id="saveVName" style="margin:0;padding:9px">Naam save</button></label></div>
+    <button class="btn" id="testAlert">▶ Test Alert (sound + voice + vibrate + notif)</button>
     <div class="note">Awaaz phone ke <b>Media volume</b> se chalti hai (ringer se nahi) — phone ka volume button dabakar media volume full karo.</div>
     <button class="btn" id="saveSet">✅ Save Settings</button>
     <h3>Demo Account</h3>
@@ -283,7 +289,7 @@ nav button.on{background:rgba(0,0,0,.78);color:var(--glow)}
 <script>
 'use strict';
 /* ================= CONFIG ================= */
-const VER = 'v1.03';
+const VER = 'v1.04';
 const LS_KEY = 'mexa_scalp_v1';
 const REST = ['https://data-api.binance.vision','https://api.binance.com','https://api1.binance.com','https://api3.binance.com'];
 const WSS  = ['wss://data-stream.binance.vision/ws/','wss://stream.binance.com:9443/ws/'];
@@ -297,7 +303,7 @@ const AMT_LIST = [1,2,5,10,20,25,50,100,200,500,1000];
 const DEF = {sym:'PAXGUSDT',tf:'1m',mode:'expiry',expiry:60,amount:10,payout:85,lot:0.01,
   tpsl:{PAXGUSDT:{tp:3,sl:2},BTCUSDT:{tp:150,sl:100}},
   emaF:9,emaS:21,rsiP:14,buyMin:50,buyMax:70,sellMin:30,sellMax:50,
-  sound:true,vib:true,notif:false,vol:3,wake:false,theme:'gold',startBal:1000};
+  sound:true,vib:true,notif:false,vol:3,wake:false,voice:true,vname:'अंकुश',theme:'gold',startBal:1000};
 
 /* ================= STATE ================= */
 let st = {set:JSON.parse(JSON.stringify(DEF)), bal:DEF.startBal, open:[], hist:[]};
@@ -526,9 +532,32 @@ async function showNotif(title, body){
     await reg.showNotification(title,{body,icon:'icon-192.png',badge:'icon-192.png',tag:'mexa-sig',renotify:true,vibrate:[300,120,300,120,300]}); return true;
   }catch(e){ try{ new Notification(title,{body,icon:'icon-192.png'}); return true; }catch(e2){ return false; } }
 }
+const ASSET_HI={PAXGUSDT:'गोल्ड',BTCUSDT:'बिटकॉइन'};
+let hiVoice=null;
+function pickVoice(){
+  if(!('speechSynthesis' in window)) return;
+  const vs=speechSynthesis.getVoices();
+  hiVoice=vs.find(v=>/^hi/i.test(v.lang))||vs.find(v=>/en.?IN/i.test(v.lang))||null;
+}
+if('speechSynthesis' in window){ pickVoice(); speechSynthesis.onvoiceschanged=pickVoice; }
+function speak(text){
+  if(!('speechSynthesis' in window)) return false;
+  try{
+    speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text);
+    u.lang=(hiVoice&&hiVoice.lang)||'hi-IN'; if(hiVoice) u.voice=hiVoice;
+    u.rate=0.95; u.pitch=1; u.volume=1;
+    speechSynthesis.speak(u); return true;
+  }catch(e){ return false; }
+}
+function sigVoiceText(buy){
+  const n=(st.set.vname||'').trim();
+  return (n?'हेलो '+n+', ':'')+(ASSET_HI[st.set.sym]||'')+' में '+(buy?'बाय':'सेल')+' सिग्नल आया है';
+}
 function alertNow(buy,title,body,withNotif){
   const s=st.set;
-  if(s.sound){ unlockAudio(); sigSound(buy); }
+  if(s.sound){ unlockAudio(); if(s.voice){ if(buy){beep(988,.16);beep(1319,.22,.2);} else {beep(784,.16);beep(523,.26,.2);} } else sigSound(buy); }
+  if(s.voice) setTimeout(()=>speak(sigVoiceText(buy)), s.sound?650:0);
   if(s.vib) doVib(buy?[250,120,250,120,250]:[600,150,600]);
   if(s.notif && withNotif) showNotif(title,body);
 }
@@ -573,6 +602,7 @@ function closeTrade(t, exit, why){
   save(); renderBal(); dirty=true;
   toast((res==='W'?'✅ WIN ':res==='L'?'❌ LOSS ':'➖ TIE ')+fm(pl,true), res==='W'?'win':res==='L'?'loss':'');
   if(st.set.sound && actx){ if(res==='W'){beep(1046,.12);beep(1318,.12,.12);beep(1568,.2,.24);} else if(res==='L') beep(220,.35); }
+  if(st.set.voice) setTimeout(()=>speak(res==='W'?'जीत गए, '+Math.round(pl)+' डॉलर प्रॉफिट':res==='L'?'लॉस हुआ':'बराबर'), 450);
   if($('shTrades').classList.contains('on')) renderTrades();
 }
 function onTick(){
@@ -729,6 +759,7 @@ function renderControls(){
   document.querySelector('meta[name=theme-color]').content = s.theme==='gold'?'#b8892c':'#9aa0a6';
   document.querySelectorAll('[data-th]').forEach(b=>b.classList.toggle('on',b.dataset.th===s.theme));
   $('tSnd').classList.toggle('on',s.sound); $('tVib').classList.toggle('on',s.vib); $('tNot').classList.toggle('on',s.notif);
+  $('tVoice').classList.toggle('on',s.voice); $('tVoice').textContent='🗣 Voice: '+(s.voice?'ON':'OFF');
   $('tSnd').textContent='🔊 Sound: '+(s.sound?'ON':'OFF'); $('tVib').textContent='📳 Vibrate: '+(s.vib?'ON':'OFF'); $('tNot').textContent='🔔 Notif: '+(s.notif?'ON':'OFF');
   document.querySelectorAll('[data-vol]').forEach(b=>b.classList.toggle('on',+b.dataset.vol===s.vol));
 }
@@ -828,7 +859,7 @@ function renderReport(){
 
 /* settings sheet */
 const SMAP={sEF:'emaF',sES:'emaS',sRP:'rsiP',sPO:'payout',sBMin:'buyMin',sBMax:'buyMax',sSMin:'sellMin',sSMax:'sellMax',sSB:'startBal'};
-function fillSettings(){ for(const id in SMAP) $(id).value=st.set[SMAP[id]]; $('verNote').textContent='MEXA SCALP '+VER; }
+function fillSettings(){ for(const id in SMAP) $(id).value=st.set[SMAP[id]]; $('sVName').value=st.set.vname||''; $('verNote').textContent='MEXA SCALP '+VER; }
 $('saveSet').onclick=()=>{
   const s=st.set;
   for(const id in SMAP){ const v=parseFloat($(id).value); if(isFinite(v)) s[SMAP[id]]=v; }
@@ -890,9 +921,13 @@ $('tNot').onclick=async()=>{
   st.set.notif=!st.set.notif; save(); renderControls();
 };
 document.querySelectorAll('[data-vol]').forEach(b=>b.onclick=()=>{ st.set.vol=+b.dataset.vol; save(); renderControls(); unlockAudio(); beep(988,.2); });
+$('tVoice').onclick=()=>{ st.set.voice=!st.set.voice; save(); renderControls(); if(st.set.voice && !speak('वॉइस अलर्ट चालू')) toast('Is browser me voice support nahi — Chrome me kholo'); };
+$('tVoiceTest').onclick=()=>{ if(!speak(sigVoiceText(true))) toast('Is browser me voice support nahi — Chrome me kholo'); else if(!hiVoice) toast('Hindi voice nahi mili — phone Settings → Text-to-speech me Google + Hindi daalo'); };
+$('saveVName').onclick=()=>{ st.set.vname=$('sVName').value.trim(); save(); speak(sigVoiceText(true)); toast('✅ Naam save'); };
 $('testAlert').onclick=async()=>{
   unlockAudio(); const s=st.set;
   if(s.sound) sigSound(true);
+  if(s.voice) setTimeout(()=>speak(sigVoiceText(true)), s.sound?1700:0);
   let msg=[];
   if(!s.sound) msg.push('Sound OFF hai');
   if(s.vib){ const r=doVib([250,120,250,120,250]); if(r!=='ok') msg.push(r==='nosupport'?'Vibrate support nahi':'Vibrate block'); } else msg.push('Vibrate OFF hai');
