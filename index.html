@@ -2,8 +2,15 @@
 <html lang="hi">
 <head>
 <!--
-  MEXA SCALP  v1.07  (2026-10-18)
+  MEXA SCALP  v1.08  (2026-10-18)
   ------------------------------------------------------------
+  v1.08
+   - 📊 TradingView chart (default): GOLD = OANDA:XAUUSD (asli spot gold), BTC = BINANCE:BTCUSDT,
+     EMA + RSI ke saath; "🕯 MS chart" button se purana MEXA chart (tir + trade lines)
+   - 📲 MT5 button: MT5 app kholta hai (na ho to Play Store)
+   - ✅ "Maine trade liya" button: MT5 me li hui asli trade ka record → Trades tab me
+     WIN/LOSS + $ likho, real win% aur net P/L
+   - Gold TP $5 / SL $2.5 (naya default)
   v1.07
    - ⚡ LIVE signal: candle band hone ka intezaar nahi — EMA cross hote hi usi pal signal
      (har candle par max 1). Candle close par cross wapas ho gaya to "सिग्नल कैंसल" bolta hai + tir hatta hai
@@ -132,6 +139,20 @@ body.silver .info .g{color:#087345}
 .btns button.pulse{animation:pulse .9s ease-in-out infinite}
 @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,.0),inset 0 1px 0 rgba(255,255,255,.4)}50%{box-shadow:0 0 0 5px rgba(255,255,255,.75),inset 0 1px 0 rgba(255,255,255,.4)}}
 .hide{display:none!important}
+.realrow{display:flex;gap:8px;margin-bottom:7px}
+.realrow button{flex:1;height:36px;border-radius:10px;background:var(--dark);color:var(--glow);font-weight:900;font-size:13px;border:1px solid rgba(255,255,255,.12)}
+.realrow button:active{transform:scale(.97)}
+.tvbox{position:absolute;inset:0;display:none;background:#0b0f14}
+.tvmode .tvbox{display:block}
+.tvmode canvas,.tvmode .sigbar,.tvmode .zoom,.tvmode .loading{display:none!important}
+.chartTog{position:absolute;left:8px;bottom:34px;z-index:4;padding:6px 10px;border-radius:9px;background:rgba(0,0,0,.75);color:var(--glow);font-weight:900;font-size:11px;border:1px solid var(--glow)}
+.tookbg{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:70;display:none;align-items:flex-end}
+.tookbg.on{display:flex}
+.took{width:100%;background:var(--dark);color:var(--txt);border-top:2px solid var(--glow);border-radius:16px 16px 0 0;padding:16px 14px calc(env(safe-area-inset-bottom) + 14px)}
+.took h2{font-size:16px;color:var(--glow);margin-bottom:10px}
+.it .rb{display:flex;gap:4px}
+.it .rb button{padding:5px 7px}
+.it .rb .w{background:#0f6b45}.it .rb .l{background:#7a1820}
 
 /* nav */
 nav{display:flex;margin:8px 8px calc(env(safe-area-inset-bottom) + 6px);border-radius:14px;overflow:hidden}
@@ -176,7 +197,7 @@ nav button.on{background:rgba(0,0,0,.78);color:var(--glow)}
 
 <header>
   <div class="logo metal">MS</div>
-  <div class="brand"><b>MEXA SCALP</b><small>PRACTICE · <span id="ver">v1.07</span></small></div>
+  <div class="brand"><b>MEXA SCALP</b><small>PRACTICE · <span id="ver">v1.08</span></small></div>
   <div class="bal"><small>DEMO BALANCE</small><span id="bal">$1,000.00</span></div>
   <button class="rbtn metal" id="refBtn" title="Refresh">↻</button>
 </header>
@@ -194,10 +215,12 @@ nav button.on{background:rgba(0,0,0,.78);color:var(--glow)}
   <div class="frame metal">
     <div class="chartbox" id="cbox">
       <canvas id="cv"></canvas>
+      <div id="tvbox" class="tvbox"></div>
       <div class="sigbar" id="sigbar"></div>
       <div class="banner" id="banner"></div>
       <div class="zoom"><button id="zOut">−</button><button id="zIn">+</button><button id="zNow">⇥</button></div>
       <div class="loading" id="loading">Live chart load ho raha hai…</div>
+      <button class="chartTog" id="chartTog">🕯 MS chart</button>
     </div>
   </div>
 
@@ -221,6 +244,10 @@ nav button.on{background:rgba(0,0,0,.78);color:var(--glow)}
       </div>
       <div class="info" id="iTp"></div>
     </div>
+    <div class="realrow">
+      <button id="bMT5">📲 MT5 kholo</button>
+      <button id="bTook">✅ Maine trade liya</button>
+    </div>
     <div class="btns">
       <button class="up" id="bUp">▲ BUY</button>
       <button class="dn" id="bDn">▼ SELL</button>
@@ -231,7 +258,10 @@ nav button.on{background:rgba(0,0,0,.78);color:var(--glow)}
   <div class="sheet" id="shTrades">
     <h2>🧾 Meri Trades</h2>
     <div class="stats" id="tStats"></div>
-    <h3>Open Trades</h3>
+    <h3>📲 MT5 Real Trades</h3>
+    <div class="stats" id="rStats"></div>
+    <div class="list" id="tReal" style="margin-top:6px"></div>
+    <h3>Open Trades (practice)</h3>
     <div class="list" id="tOpen"></div>
     <h3>History</h3>
     <div class="list" id="tHist"></div>
@@ -286,6 +316,7 @@ nav button.on{background:rgba(0,0,0,.78);color:var(--glow)}
     <div class="set"><label>Start balance ($)<input type="number" id="sSB" min="10" step="10"></label></div>
     <button class="btn red" id="resetAcc">Balance reset karo</button>
     <div class="note">Data: Binance public feed. GOLD = PAXG/USDT (1 PAXG = 1 troy ounce gold, XAUUSD ke saath chalta hai par bilkul same nahi). TP/SL P/L XAUUSD jaisa: 1 lot = 100 oz, 0.01 lot par $1 move = $1. Ye sirf practice app hai, asli paisa nahi lagta.</div>
+    <div class="note">📊 TradingView chart: GOLD = OANDA:XAUUSD (asli gold, MT5 ke kareeb), BTC = BINANCE:BTCUSDT. Signal / alert abhi bhi Binance data (PAXG/BTC) se banta hai — Gold me kabhi signal aur TradingView chart thoda alag dikh sakta hai. Real gold signal ke liye MT5 Signal EA ka push sabse sahi.</div>
     <div class="note" id="verNote"></div>
   </div>
 </div>
@@ -297,6 +328,19 @@ nav button.on{background:rgba(0,0,0,.78);color:var(--glow)}
   <button data-tab="shSet"><i>⚙️</i>Settings</button>
 </nav>
 <div class="toast" id="toast"></div>
+<div class="tookbg" id="tookbg">
+  <div class="took">
+    <h2>✅ MT5 me li hui trade</h2>
+    <div class="tog" id="tkSide"><button data-side="1">▲ BUY</button><button data-side="-1">▼ SELL</button></div>
+    <div class="set" style="margin-top:10px">
+      <label>Lot<input type="number" id="tkLot" step="0.01" min="0.01"></label>
+      <label>Entry price (MT5 wala)<input type="number" id="tkPrice" step="0.01"></label>
+    </div>
+    <div class="note" id="tkInfo"></div>
+    <button class="btn" id="tkSave">💾 Save</button>
+    <button class="btn red" id="tkCancel">Cancel</button>
+  </div>
+</div>
 <div class="rmenu" id="rmenu">
   <button id="rApp">🔄 App + Chart Refresh<small>Naya version + live data dobara load</small></button>
   <button id="rBal">💰 Demo Balance Reset<small id="rBalSub">Balance wapas $1,000.00</small></button>
@@ -305,7 +349,7 @@ nav button.on{background:rgba(0,0,0,.78);color:var(--glow)}
 <script>
 'use strict';
 /* ================= CONFIG ================= */
-const VER = 'v1.07';
+const VER = 'v1.08';
 const LS_KEY = 'mexa_scalp_v1';
 const REST = ['https://data-api.binance.vision','https://api.binance.com','https://api1.binance.com','https://api3.binance.com'];
 const WSS  = ['wss://data-stream.binance.vision/ws/','wss://stream.binance.com:9443/ws/'];
@@ -317,12 +361,12 @@ const TF_SEC = {'1m':60,'5m':300};
 const EXP_LIST = [30,60,120,180,300,600,900];
 const AMT_LIST = [1,2,5,10,20,25,50,100,200,500,1000];
 const DEF = {sym:'PAXGUSDT',tf:'1m',mode:'expiry',expiry:60,amount:10,payout:85,lot:0.01,
-  tpsl:{PAXGUSDT:{tp:3,sl:2},BTCUSDT:{tp:150,sl:100}},
+  tpsl:{PAXGUSDT:{tp:5,sl:2.5},BTCUSDT:{tp:150,sl:100}},chartTV:true,
   emaF:5,emaS:13,rsiP:7,buyMin:50,buyMax:80,sellMin:20,sellMax:50,live:true,
   sound:true,vib:true,notif:false,vol:3,wake:false,voice:true,vname:'अंकुश',theme:'gold',startBal:1000};
 
 /* ================= STATE ================= */
-let st = {set:JSON.parse(JSON.stringify(DEF)), bal:DEF.startBal, open:[], hist:[]};
+let st = {set:JSON.parse(JSON.stringify(DEF)), bal:DEF.startBal, open:[], hist:[], real:[]};
 let C = [];               // candles {t,o,h,l,c,x}
 let IND = {ef:[],es:[],rs:[]};
 let SIGS = [];            // signals on closed candles {i,t,side,price,rsi}
@@ -345,6 +389,9 @@ function load(){
       st.bal = isFinite(j.bal) ? +j.bal : DEF.startBal;
       st.open = Array.isArray(j.open)? j.open : [];
       st.hist = Array.isArray(j.hist)? j.hist : [];
+      st.real = Array.isArray(j.real)? j.real : [];
+      if(!j.set || !j.set.v108){ st.set.tpsl.PAXGUSDT={tp:5,sl:2.5}; st.set.chartTV=true; } // v1.08 defaults
+      st.set.v108=true;
     }
   }catch(e){}
 }
@@ -792,7 +839,98 @@ function draw(){
     `<span>Trend <b class="${efv>esv?'g':'r'}">${isFinite(efv)&&isFinite(esv)?(efv>esv?'▲':'▼'):'-'}</b></span>`+
     (ls?`<span>Last: <b class="${ls.side>0?'g':'r'}">${ls.side>0?'BUY':'SELL'}</b> ${hhmm(ls.t+tfMs())}</span>`:'');
 }
-function loop(){ if(dirty && $('cbox').offsetParent!==null){ dirty=false; draw(); } requestAnimationFrame(loop); }
+// ---------- TradingView chart ----------
+const TV_SYM={PAXGUSDT:'OANDA:XAUUSD',BTCUSDT:'BINANCE:BTCUSDT'};
+let tvLoaded=false, tvLoading=false, tvKey='';
+function loadTV(cb){
+  if(tvLoaded){ cb(); return; }
+  if(tvLoading){ setTimeout(()=>loadTV(cb),300); return; }
+  tvLoading=true;
+  const sc=document.createElement('script'); sc.src='https://s3.tradingview.com/tv.js';
+  sc.onload=()=>{ tvLoaded=true; tvLoading=false; cb(); };
+  sc.onerror=()=>{ tvLoading=false; toast('TradingView load nahi hua — internet check karo'); };
+  document.head.appendChild(sc);
+}
+function renderTV(force){
+  const s=st.set, key=s.sym+'|'+s.tf+'|'+s.emaF+'|'+s.emaS+'|'+s.rsiP;
+  if(!force && key===tvKey) return;
+  tvKey=key;
+  loadTV(()=>{
+    if(!window.TradingView) return;
+    $('tvbox').innerHTML='';
+    try{
+      new TradingView.widget({
+        container_id:'tvbox', autosize:true,
+        symbol:TV_SYM[s.sym]||'OANDA:XAUUSD', interval:s.tf==='5m'?'5':'1',
+        timezone:'Asia/Kolkata', theme:'dark', style:'1', locale:'in',
+        toolbar_bg:'#0b0f14', enable_publishing:false, allow_symbol_change:true,
+        hide_side_toolbar:true, save_image:false, withdateranges:false, details:false,
+        studies:[
+          {id:'MAExp@tv-basicstudies', inputs:{length:s.emaF}},
+          {id:'MAExp@tv-basicstudies', inputs:{length:s.emaS}},
+          {id:'RSI@tv-basicstudies',   inputs:{length:s.rsiP}}
+        ]
+      });
+    }catch(e){ toast('TradingView chart error'); }
+  });
+}
+function applyChartMode(){
+  const tv=!!st.set.chartTV;
+  $('cbox').classList.toggle('tvmode',tv);
+  $('chartTog').textContent = tv ? '🕯 MS chart' : '📊 TradingView';
+  if(tv) renderTV(false); else { resize(); dirty=true; }
+}
+$('chartTog').onclick=()=>{ st.set.chartTV=!st.set.chartTV; save(); applyChartMode(); };
+
+// ---------- MT5 app kholo ----------
+$('bMT5').onclick=()=>{
+  const play='https://play.google.com/store/apps/details?id=net.metaquotes.metatrader5';
+  if(/android/i.test(navigator.userAgent)){
+    location.href='intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=net.metaquotes.metatrader5;S.browser_fallback_url='+encodeURIComponent(play)+';end';
+  } else window.open(play,'_blank');
+};
+
+// ---------- Maine trade liya (MT5 real trade journal) ----------
+let tkSide=1;
+function setTkSide(v){ tkSide=v; document.querySelectorAll('[data-side]').forEach(b=>b.classList.toggle('on',+b.dataset.side===v)); }
+document.querySelectorAll('[data-side]').forEach(b=>b.onclick=()=>setTkSide(+b.dataset.side));
+$('bTook').onclick=()=>{
+  const ls=(liveSig&&liveSig.cur)?liveSig:SIGS[SIGS.length-1];
+  setTkSide(ls?ls.side:1);
+  $('tkLot').value=st.set.lot.toFixed(2);
+  $('tkPrice').value=price?price.toFixed(2):'';
+  const ts=st.set.tpsl[st.set.sym];
+  $('tkInfo').textContent=(ls?('Last signal: '+(ls.side>0?'BUY':'SELL')+' @ '+fp(ls.price)+' · '):'')+'App price '+(price?fp(price):'-')+' — MT5 ka asli entry price daalo (thoda alag hoga). TP $'+ts.tp+' / SL $'+ts.sl;
+  $('tookbg').classList.add('on');
+};
+$('tkCancel').onclick=()=>$('tookbg').classList.remove('on');
+$('tookbg').onclick=e=>{ if(e.target.id==='tookbg') $('tookbg').classList.remove('on'); };
+$('tkSave').onclick=()=>{
+  const lot=parseFloat($('tkLot').value)||st.set.lot, ep=parseFloat($('tkPrice').value)||price;
+  const ls=(liveSig&&liveSig.cur)?liveSig:SIGS[SIGS.length-1];
+  const onSig=!!(ls && ls.side===tkSide && (Date.now()-(ls.t+tfMs()))<=tfMs()*2);
+  st.real.unshift({id:Date.now(),t:Date.now(),sym:st.set.sym,side:tkSide,lot,entry:ep,onSig,res:'',pl:0});
+  if(st.real.length>300) st.real.length=300;
+  save(); $('tookbg').classList.remove('on');
+  toast('✅ Real trade note ho gaya — result Trades tab me likhna');
+  if(st.set.voice) speak('ट्रेड नोट हो गया');
+  if($('shTrades').classList.contains('on')) renderTrades();
+};
+function renderReal(){
+  const r=st.real, done=r.filter(x=>x.res), w=done.filter(x=>x.res==='W').length, net=done.reduce((a,x)=>a+(+x.pl||0),0);
+  $('rStats').innerHTML=statBox('Real trades',r.length)+statBox('Win %',done.length?(w/done.length*100).toFixed(0)+'%':'-',w*2>=done.length?'g':'r')+statBox('Net $',fm(net,true),net>=0?'g':'r');
+  $('tReal').innerHTML=r.length?r.slice(0,100).map(x=>`<div class="it"><span class="s ${x.side>0?'g':'r'}">${x.side>0?'▲ BUY':'▼ SELL'}</span>
+    <span class="m">${ASSETS[x.sym]?ASSETS[x.sym].name:x.sym} · ${(+x.lot).toFixed(2)} lot @ ${(+x.entry).toFixed(2)}${x.onSig?' · 📡':''}<br>${hhmm(x.t)}</span>
+    ${x.res?`<span class="p ${x.res==='W'?'g':'r'}">${fm(+x.pl,true)}</span>`:`<span class="rb"><button class="w" data-rw="${x.id}">WIN</button><button class="l" data-rl="${x.id}">LOSS</button></span>`}</div>`).join(''):'<div class="empty">MT5 me trade lekar "✅ Maine trade liya" dabao</div>';
+  const mark=(id,win)=>{ const x=st.real.find(z=>String(z.id)===id); if(!x) return;
+    const v=prompt(win?'Kitna profit hua? ($)':'Kitna loss hua? ($)', win?'':''); if(v===null) return;
+    const n=Math.abs(parseFloat(v)); if(!isFinite(n)){ toast('Sahi amount daalo'); return; }
+    x.res=win?'W':'L'; x.pl=win?n:-n; save(); renderTrades(); };
+  $('tReal').querySelectorAll('[data-rw]').forEach(b=>b.onclick=()=>mark(b.dataset.rw,true));
+  $('tReal').querySelectorAll('[data-rl]').forEach(b=>b.onclick=()=>mark(b.dataset.rl,false));
+}
+
+function loop(){ if(dirty && $('cbox').offsetParent!==null && !st.set.chartTV){ dirty=false; draw(); } requestAnimationFrame(loop); }
 
 // pan / pinch
 let tch=null;
@@ -857,11 +995,11 @@ document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{ st.set.mode=
 document.querySelectorAll('[data-sym]').forEach(b=>b.onclick=()=>{
   if(b.dataset.sym===st.set.sym) return;
   if(st.open.length){ toast('Pehle open trades band hone do'); return; }
-  st.set.sym=b.dataset.sym; save(); renderControls(); start();
+  st.set.sym=b.dataset.sym; save(); renderControls(); start(); if(st.set.chartTV) renderTV(false);
 });
 document.querySelectorAll('[data-tf]').forEach(b=>b.onclick=()=>{
   if(b.dataset.tf===st.set.tf) return;
-  st.set.tf=b.dataset.tf; save(); renderControls(); start();
+  st.set.tf=b.dataset.tf; save(); renderControls(); start(); if(st.set.chartTV) renderTV(false);
 });
 $('bUp').onclick=()=>openTrade(1); $('bDn').onclick=()=>openTrade(-1);
 
@@ -879,6 +1017,7 @@ document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
 /* trades sheet */
 function statBox(l,v,cls){ return `<div class="stat"><small>${l}</small><b class="${cls||''}">${v}</b></div>`; }
 function renderTrades(){
+  renderReal();
   const h=st.hist, w=h.filter(t=>t.res==='W').length, l=h.filter(t=>t.res==='L').length, net=h.reduce((a,t)=>a+t.pl,0);
   const sg=h.filter(t=>t.onSig), sgw=sg.filter(t=>t.res==='W').length;
   $('tStats').innerHTML=statBox('Trades',h.length)+statBox('Win %',(w+l?(w/(w+l)*100).toFixed(0):0)+'%',w>=l?'g':'r')+statBox('Net P/L',fm(net,true),net>=0?'g':'r')+
@@ -1000,7 +1139,7 @@ $('tNot').onclick=async()=>{
 };
 document.querySelectorAll('[data-vol]').forEach(b=>b.onclick=()=>{ st.set.vol=+b.dataset.vol; save(); renderControls(); unlockAudio(); beep(988,.2); });
 $('tLive').onclick=()=>{ st.set.live=!st.set.live; if(!st.set.live) liveSig=null; save(); renderControls(); toast(st.set.live?'⚡ LIVE signal ON — cross hote hi alert':'LIVE OFF — sirf candle close par signal'); };
-document.querySelectorAll('[data-preset]').forEach(b=>b.onclick=()=>{ Object.assign(st.set, PRESETS[b.dataset.preset]); liveSig=null; save(); calc(); dirty=true; renderControls(); fillSettings(); toast(b.dataset.preset==='fast'?'⚡ FAST preset lag gaya':'NORMAL preset lag gaya'); });
+document.querySelectorAll('[data-preset]').forEach(b=>b.onclick=()=>{ Object.assign(st.set, PRESETS[b.dataset.preset]); liveSig=null; save(); calc(); dirty=true; tvKey=''; if(st.set.chartTV) renderTV(false); renderControls(); fillSettings(); toast(b.dataset.preset==='fast'?'⚡ FAST preset lag gaya':'NORMAL preset lag gaya'); });
 $('tVoice').onclick=()=>{ st.set.voice=!st.set.voice; save(); renderControls(); if(st.set.voice && !speak('वॉइस अलर्ट चालू')) toast('Is browser me voice support nahi — Chrome me kholo'); };
 $('tVoiceTest').onclick=()=>{ if(!speak(sigVoiceText(true))) toast('Is browser me voice support nahi — Chrome me kholo'); else if(!NB && !hiVoice) toast('Hindi voice nahi mili — phone Settings → Text-to-speech me Google + Hindi daalo'); };
 $('saveVName').onclick=()=>{ st.set.vname=$('sVName').value.trim(); save(); speak(sigVoiceText(true)); toast('✅ Naam save'); };
@@ -1022,7 +1161,7 @@ document.addEventListener('click',unlockAudio,{once:true});
 /* ================= BOOT ================= */
 load();
 $('ver').textContent=VER;
-renderControls(); renderBal(); resize(); requestAnimationFrame(loop); start(); applyWake(false);
+renderControls(); renderBal(); resize(); requestAnimationFrame(loop); start(); applyWake(false); applyChartMode();
 document.addEventListener('click',()=>{ if(st.set.wake && !wakeLock && !NSCR) applyWake(false); });
 if('serviceWorker' in navigator){ window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }
 </script>

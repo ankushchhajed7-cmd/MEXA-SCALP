@@ -1,6 +1,6 @@
 # MEXA SCALP — STATE
 
-**Current version:** v1.07 (2026-10-18)
+**Current version:** v1.08 (2026-10-18)
 **Live URL (main merge ke baad):** https://ankushchhajed7-cmd.github.io/MEXA-SCALP/
 
 ## Kya hai
@@ -19,6 +19,12 @@ Plan: Pehle app me trade karke signal check karo → sahi chala to **Step 2: MT5
 | mt5/MEXA SCALP Signal EA v1.00.mq5 | Same signal, EA form (koi trade nahi) — VPS Helper se deploy (Samusignal repo `vps-ea/`) |
 
 ## Version history
+- **v1.08** (2026-10-18) — user request
+  - 📊 **TradingView chart** default (GOLD = OANDA:XAUUSD, BTC = BINANCE:BTCUSDT, EMA + RSI studies); "🕯 MS chart" button se MEXA chart (tir, trade lines) wapas
+  - 📲 **MT5 kholo** button (Android intent → MT5 app, na ho to Play Store). APK me chalne ke liye apk-factory `feature-intent-links` merge + naya APK
+  - ✅ **Maine trade liya** button: MT5 ki asli trade ka record (side, lot, MT5 entry) → Trades tab "MT5 Real Trades" me WIN/LOSS + $ → real win % / net
+  - Gold **TP $5 / SL $2.5** (purane users par ek baar apne aap)
+  - Strategy same (signal engine Binance data par)
 - **v1.07** (2026-10-18) — Signal jaldi (user: "signal 2-3 min baad aata hai, move nikal jata hai")
   - ⚡ **LIVE signal** (default ON): chalu candle par EMA cross hote hi usi pal alert (har candle max 1), chart par chamakta ⚡ tir, banner "⚡ LIVE"
   - Candle close par cross wapas → **"सिग्नल कैंसल"** voice + grey banner + tir hatta hai + vibrate; close par pakka ho to chup
@@ -62,7 +68,8 @@ Plan: Pehle app me trade karke signal check karo → sahi chala to **Step 2: MT5
 | BUY RSI range | 50–80 (NORMAL: 50–70) |
 | SELL RSI range | 20–50 (NORMAL: 30–50) |
 | Expiry / Amount / Payout | 1:00 / $10 / 85% |
-| Lot / TP / SL (Gold) | 0.01 / $3 / $2 |
+| Lot / TP / SL (Gold) | 0.01 / $5 / $2.5 |
+| Chart | TradingView (MS chart toggle) |
 | Lot / TP / SL (BTC) | 0.01 / $150 / $100 |
 | Start balance | $1000 |
 | Volume | High (3 of 4) |
@@ -70,6 +77,7 @@ Plan: Pehle app me trade karke signal check karo → sahi chala to **Step 2: MT5
 | Voice / Naam | ON / अंकुश |
 
 ## Decisions
+- TradingView widget iframe hai — uska data padh nahi sakte, isliye signal Binance (PAXG/BTC) se hi; gold me TV (XAUUSD) aur signal thoda alag ho sakta hai.
 - LIVE signal repaint ho sakta hai (candle ke beech cross aakar wapas ja sakta hai) — isliye close par confirm/cancel. Tez signal = zyada galat signal, ye trade-off user ne chuna.
 - MT5 Signal EA abhi bhi candle-close (NORMAL 9/21) par hai — LIVE/FAST waha baad me.
 - Voice phone ke Text-to-speech (Google TTS) se — offline file nahi. MT5 push ki tune MT5 app khud tay karta hai, EA se badal nahi sakte.
