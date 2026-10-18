@@ -1,6 +1,6 @@
 # MEXA SCALP — STATE
 
-**Current version:** v1.06 (2026-10-18)
+**Current version:** v1.07 (2026-10-18)
 **Live URL (main merge ke baad):** https://ankushchhajed7-cmd.github.io/MEXA-SCALP/
 
 ## Kya hai
@@ -19,6 +19,12 @@ Plan: Pehle app me trade karke signal check karo → sahi chala to **Step 2: MT5
 | mt5/MEXA SCALP Signal EA v1.00.mq5 | Same signal, EA form (koi trade nahi) — VPS Helper se deploy (Samusignal repo `vps-ea/`) |
 
 ## Version history
+- **v1.07** (2026-10-18) — Signal jaldi (user: "signal 2-3 min baad aata hai, move nikal jata hai")
+  - ⚡ **LIVE signal** (default ON): chalu candle par EMA cross hote hi usi pal alert (har candle max 1), chart par chamakta ⚡ tir, banner "⚡ LIVE"
+  - Candle close par cross wapas → **"सिग्नल कैंसल"** voice + grey banner + tir hatta hai + vibrate; close par pakka ho to chup
+  - **Speed preset**: ⚡ FAST (EMA 5/13, RSI 7, BUY 50–80, SELL 20–50) = naya default; NORMAL (9/21, RSI 14, 50–70 / 30–50)
+  - Purane users par ek baar FAST + LIVE apne aap lag jata hai
+  - Report sirf candle-close signals ka; LIVE ka asli result Trades tab (Signal wali)
 - **v1.06** (2026-10-18) — Voice fix: Devanagari "हेलो" ko phone ki voice "hevu" bol rahi thi → ab "Hello" English me likha (baaki line Hindi me). APK me voice chal gayi (v1.05 + naya APK #32 confirm).
 - **v1.05** (2026-10-18) — **APK support**: apk-factory ke naye `ANVAlert` bridge se Voice (Android TTS), Notification, Vibrate; `ANVScreen.keepOn` se Screen ON. Chrome/Home-screen me pehle jaisa Web API. APK naye apk-factory workflow (branch `feature-alert-bridge`) se dobara banana hoga.
 - **v1.04** (2026-10-18) — 🗣 **Voice alert**: signal par phone ki Hindi voice bolti hai "हेलो अंकुश, गोल्ड में बाय/सेल सिग्नल आया है"; trade WIN/LOSS bhi bolta hai. Settings: Voice ON/OFF, naam badlo, Voice Test. (Voice ON ho to beep 1 baar, phir awaaz)
@@ -50,10 +56,11 @@ Plan: Pehle app me trade karke signal check karo → sahi chala to **Step 2: MT5
 | Setting | Value |
 |---|---|
 | Asset / TF | GOLD (PAXG) / 1M |
-| EMA fast / slow | 9 / 21 |
-| RSI period | 14 |
-| BUY RSI range | 50–70 |
-| SELL RSI range | 30–50 |
+| Preset / LIVE | ⚡ FAST / ON (NORMAL bhi available) |
+| EMA fast / slow | 5 / 13 (NORMAL: 9 / 21) |
+| RSI period | 7 (NORMAL: 14) |
+| BUY RSI range | 50–80 (NORMAL: 50–70) |
+| SELL RSI range | 20–50 (NORMAL: 30–50) |
 | Expiry / Amount / Payout | 1:00 / $10 / 85% |
 | Lot / TP / SL (Gold) | 0.01 / $3 / $2 |
 | Lot / TP / SL (BTC) | 0.01 / $150 / $100 |
@@ -63,6 +70,8 @@ Plan: Pehle app me trade karke signal check karo → sahi chala to **Step 2: MT5
 | Voice / Naam | ON / अंकुश |
 
 ## Decisions
+- LIVE signal repaint ho sakta hai (candle ke beech cross aakar wapas ja sakta hai) — isliye close par confirm/cancel. Tez signal = zyada galat signal, ye trade-off user ne chuna.
+- MT5 Signal EA abhi bhi candle-close (NORMAL 9/21) par hai — LIVE/FAST waha baad me.
 - Voice phone ke Text-to-speech (Google TTS) se — offline file nahi. MT5 push ki tune MT5 app khud tay karta hai, EA se badal nahi sakte.
 - Phone lock / app band hone par signal nahi aata (signal phone ke app me banta hai). Screen ON button jugaad hai; asli background alert ke liye aage MT5 indicator + SendNotification (push) plan.
 - Alert sound phone ke **Media volume** se chalta hai; notification sirf tab jab app background me ho.
