@@ -2,8 +2,11 @@
 <html lang="hi">
 <head>
 <!--
-  MEXA SCALP  v1.04  (2026-10-18)
+  MEXA SCALP  v1.05  (2026-10-18)
   ------------------------------------------------------------
+  v1.05
+   - APK (apk-factory) support: native ANVAlert bridge se Voice, Notification, Vibrate
+     aur ANVScreen se Screen ON — WebView APK me bhi sab chalega (naya APK banana zaroori)
   v1.04
    - 🗣 Voice alert: signal par bolta hai "हेलो अंकुश, गोल्ड में बाय सिग्नल आया है" (phone ki Hindi voice)
    - Settings: Voice ON/OFF + apna naam + Voice test; trade WIN/LOSS bhi bolta hai
@@ -164,7 +167,7 @@ nav button.on{background:rgba(0,0,0,.78);color:var(--glow)}
 
 <header>
   <div class="logo metal">MS</div>
-  <div class="brand"><b>MEXA SCALP</b><small>PRACTICE · <span id="ver">v1.04</span></small></div>
+  <div class="brand"><b>MEXA SCALP</b><small>PRACTICE · <span id="ver">v1.05</span></small></div>
   <div class="bal"><small>DEMO BALANCE</small><span id="bal">$1,000.00</span></div>
   <button class="rbtn metal" id="refBtn" title="Refresh">↻</button>
 </header>
@@ -289,7 +292,7 @@ nav button.on{background:rgba(0,0,0,.78);color:var(--glow)}
 <script>
 'use strict';
 /* ================= CONFIG ================= */
-const VER = 'v1.04';
+const VER = 'v1.05';
 const LS_KEY = 'mexa_scalp_v1';
 const REST = ['https://data-api.binance.vision','https://api.binance.com','https://api1.binance.com','https://api3.binance.com'];
 const WSS  = ['wss://data-stream.binance.vision/ws/','wss://stream.binance.com:9443/ws/'];
@@ -517,17 +520,23 @@ function onSignal(sg){
   alertNow(buy, 'MEXA SCALP · '+(buy?'BUY':'SELL')+' signal', A().name+' '+st.set.tf.toUpperCase()+' @ '+fp(sg.price), document.hidden);
 }
 function sigSound(buy){ for(let k=0;k<3;k++){ const w=k*0.55; if(buy){beep(988,.16,w);beep(1319,.22,w+.2);} else {beep(784,.16,w);beep(523,.26,w+.2);} } }
+// APK (apk-factory WebView) ke native bridges — Chrome me ye undefined rehte hain
+const NB = window.ANVAlert || null;
+const NSCR = window.ANVScreen || null;
 function doVib(pat){
+  if(NB){ try{ return NB.vibrate([].concat(pat).join(',')) ? 'ok' : 'nosupport'; }catch(e){ return 'nosupport'; } }
   if(!('vibrate' in navigator)) return 'nosupport';
   try{ return navigator.vibrate(pat) ? 'ok' : 'blocked'; }catch(e){ return 'blocked'; }
 }
 function notifState(){
+  if(NB){ try{ return NB.notifPerm()==='granted' ? 'granted' : 'default'; }catch(e){ return 'nosupport'; } }
   if(!window.isSecureContext) return 'insecure';
   if(!('Notification' in window) || !('serviceWorker' in navigator)) return 'nosupport';
   return Notification.permission; // granted | denied | default
 }
 async function showNotif(title, body){
   if(notifState()!=='granted') return false;
+  if(NB){ try{ return !!NB.notify(title, body); }catch(e){ return false; } }
   try{ const reg=await navigator.serviceWorker.ready;
     await reg.showNotification(title,{body,icon:'icon-192.png',badge:'icon-192.png',tag:'mexa-sig',renotify:true,vibrate:[300,120,300,120,300]}); return true;
   }catch(e){ try{ new Notification(title,{body,icon:'icon-192.png'}); return true; }catch(e2){ return false; } }
@@ -540,7 +549,9 @@ function pickVoice(){
   hiVoice=vs.find(v=>/^hi/i.test(v.lang))||vs.find(v=>/en.?IN/i.test(v.lang))||null;
 }
 if('speechSynthesis' in window){ pickVoice(); speechSynthesis.onvoiceschanged=pickVoice; }
+if(NB){ try{ NB.prepare(); }catch(e){} }
 function speak(text){
+  if(NB){ try{ NB.speak(text); return true; }catch(e){ return false; } }
   if(!('speechSynthesis' in window)) return false;
   try{
     speechSynthesis.cancel();
@@ -873,6 +884,7 @@ async function applyWake(showMsg){
   const on=st.set.wake;
   $('wakeBtn').classList.toggle('on',on);
   $('wakeBtn').innerHTML=(on?'🔆 ON':'🔅 OFF')+'<small>SCREEN</small>';
+  if(NSCR){ try{ NSCR.keepOn(!!on); if(showMsg&&on) toast('🔆 Screen ON — app khula rahega to screen band nahi hogi'); }catch(e){} return; }
   if(!on){ if(wakeLock){ try{ await wakeLock.release(); }catch(e){} wakeLock=null; } return; }
   if(!('wakeLock' in navigator)){ if(showMsg) toast('Is browser me Screen ON support nahi — Chrome me kholo'); return; }
   if(document.hidden || (wakeLock && !wakeLock.released)) return;
@@ -912,9 +924,11 @@ $('tVib').onclick=()=>{
 const NOT_MSG={insecure:'Notification ke liye https link chahiye (github.io wala link kholo)',
   nosupport:'Ye browser notification nahi deta (shayad kisi app ke andar khula hai) — link Chrome me kholo, phir "Add to Home screen" karo',
   denied:'Notification block hai — Chrome ⋮ → Settings → Site settings → Notifications me is site ko Allow karo'};
+window.onAnvNotifPerm=ok=>{ if(ok){ st.set.notif=true; save(); renderControls(); toast('🔔 Notification ON'); } };
 $('tNot').onclick=async()=>{
   if(!st.set.notif){
     let n=notifState();
+    if(NB && n!=='granted'){ try{ NB.requestNotif(); }catch(e){ toast(NOT_MSG.nosupport); } return; }
     if(n==='default'){ try{ n=await Notification.requestPermission(); }catch(e){ n='denied'; } }
     if(n!=='granted'){ toast(NOT_MSG[n]||NOT_MSG.denied); return; }
   }
@@ -922,7 +936,7 @@ $('tNot').onclick=async()=>{
 };
 document.querySelectorAll('[data-vol]').forEach(b=>b.onclick=()=>{ st.set.vol=+b.dataset.vol; save(); renderControls(); unlockAudio(); beep(988,.2); });
 $('tVoice').onclick=()=>{ st.set.voice=!st.set.voice; save(); renderControls(); if(st.set.voice && !speak('वॉइस अलर्ट चालू')) toast('Is browser me voice support nahi — Chrome me kholo'); };
-$('tVoiceTest').onclick=()=>{ if(!speak(sigVoiceText(true))) toast('Is browser me voice support nahi — Chrome me kholo'); else if(!hiVoice) toast('Hindi voice nahi mili — phone Settings → Text-to-speech me Google + Hindi daalo'); };
+$('tVoiceTest').onclick=()=>{ if(!speak(sigVoiceText(true))) toast('Is browser me voice support nahi — Chrome me kholo'); else if(!NB && !hiVoice) toast('Hindi voice nahi mili — phone Settings → Text-to-speech me Google + Hindi daalo'); };
 $('saveVName').onclick=()=>{ st.set.vname=$('sVName').value.trim(); save(); speak(sigVoiceText(true)); toast('✅ Naam save'); };
 $('testAlert').onclick=async()=>{
   unlockAudio(); const s=st.set;
@@ -943,7 +957,7 @@ document.addEventListener('click',unlockAudio,{once:true});
 load();
 $('ver').textContent=VER;
 renderControls(); renderBal(); resize(); requestAnimationFrame(loop); start(); applyWake(false);
-document.addEventListener('click',()=>{ if(st.set.wake && !wakeLock) applyWake(false); });
+document.addEventListener('click',()=>{ if(st.set.wake && !wakeLock && !NSCR) applyWake(false); });
 if('serviceWorker' in navigator){ window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }
 </script>
 </body>
