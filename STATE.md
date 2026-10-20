@@ -16,11 +16,18 @@ Plan: Pehle app me trade karke signal check karo → sahi chala to **Step 2: MT5
 | icon-192.png / icon-512.png | Gold "MS" icon |
 | STATE.md | Ye file |
 | mt5/MEXA SCALP Signal v1.00.mq5 | MT5 indicator — same signal + phone push (manual install, MQL5\Indicators) |
-| mt5/MEXA SCALP Trade EA v1.01.mq5 | **AUTO TRADE EA (latest)** — TP $5 / SL $2.5 + Profit Lock |
+| mt5/MEXA SCALP Trade EA v1.02.mq5 | **AUTO TRADE EA (latest)** — v1.01 + loss cooldown + M15 trend filter + book ≥ $1.5 |
+| mt5/MEXA SCALP Trade EA v1.01.mq5 | TP $5 / SL $2.5 + Profit Lock |
 | mt5/MEXA SCALP Trade EA v1.00.mq5 | **AUTO TRADE EA** — signal par khud trade (demo pe pehle) |
 | mt5/MEXA SCALP Signal EA v1.00.mq5 | Same signal, EA form (koi trade nahi) — VPS Helper se deploy (Samusignal repo `vps-ea/`) |
 
 ## Version history
+- **Trade EA v1.02** (2026-10-20) — 20-Oct demo (0.16 lot) ka result: ~21 trades, 57% win, avg win **+$16.7** vs avg loss **−$40.4**, net −$98.97
+  - Wajah: candle-end book winners ko ~$1 move par kaat raha tha; 08:18–08:42 (server) 5 lagataar loss (BUY/SELL whipsaw); loss ke 2–7 min baad ulti trade
+  - **Loss cooldown** 15 min (input ON/OFF, restart par history se yaad)
+  - **Trend filter** M15 EMA 50 — price upar → sirf BUY, niche → sirf SELL
+  - **Book rule**: candle-end book sirf price ≥ $1.5 favour me ho to (InpMinBookMove), warna lock/TP/SL par chhodo; InpUseBook se pura OFF
+  - Dashboard: trend, cooldown baaki, book setting; push me "15 min cooldown"
 - **v1.09 + Trade EA v1.01** (2026-10-18) — 🔒 **Profit Lock** (user rule, price move me)
   - $1 favour me → SL = entry + $0.50; har $0.10 aage → lock +$0.10 (1.10→0.60, 1.20→0.70, 2.00→1.50); lock kabhi peeche nahi
   - App: TP/SL practice trades + Report dono me; Settings "🔒 Profit Lock" ON/OFF; chart par SL line peeli "🔒 +$x"; close reason LOCK; voice "प्रॉफिट लॉक"
@@ -108,6 +115,8 @@ Plan: Pehle app me trade karke signal check karo → sahi chala to **Step 2: MT5
 - Pocket Option / Olymp Trade se koi connection nahi (RBI Alert List platforms) — sirf practice + aage MT5.
 
 ## Pending / Next
+- [ ] Trade EA v1.02 Strategy Tester: filters ek-ek ON/OFF karke compare (cooldown / trend / book) — 1–2 mahine XAUUSDm M1
+- [ ] Poore hafte ki MT5 history (HTML/Excel) — ghante ke hisaab se analysis
 - [ ] Trade EA: Strategy Tester XAUUSDm M1, 1–2 mahine, CLOSE vs LIVE compare → demo par 1 hafta
 - [ ] Confirm PERSONAL FX dusre magic ki trades ko nahi chhoota
 - [ ] VPS par **MEXA SCALP Signal EA** naye XAUUSD M1 chart par lagao (auto-compile ho chuka hoga) + push test karo
